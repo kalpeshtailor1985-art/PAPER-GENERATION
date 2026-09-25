@@ -1,0 +1,3645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GSEB Question Paper Generator</title>
+
+  <!-- High-Resolution Embedded Sigma (∑) Favicon & Apple Touch Icon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%2311244e'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='300' font-family='sans-serif' font-weight='900' fill='%2338bdf8'%3E%E2%88%91%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%2311244e'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='300' font-family='sans-serif' font-weight='900' fill='%2338bdf8'%3E%E2%88%91%3C/text%3E%3C/svg%3E" />
+
+  <!-- PWA Settings -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#11244e" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SheetJS (xlsx & csv parser) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- PDF.js (PDF Text extraction) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Mammoth.js (.docx Word Document extraction) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- Tesseract.js (Client-side OCR for Scanned / Image PDFs & Photos) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <!-- FIREBASE CLOUD FIRESTORE INTEGRATION -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    .cambria-math,
+    #print-area,
+    #print-blueprint-area {
+      font-family: "Cambria Math", "Cambria", "Times New Roman", serif !important;
+    }
+
+    .cambria-math-text {
+      font-family: "Cambria Math", "Cambria", "Times New Roman", serif !important;
+    }
+
+    /* Print-specific style rules */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm;
+      }
+      body {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      body::before {
+        display: none !important;
+        content: none !important;
+      }
+      .no-print, aside, header, #update-toast, #authOverlay, #sidebarBackdrop, dialog {
+        display: none !important;
+      }
+      main {
+        overflow: visible !important;
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      #view-generate { display: block !important; }
+      body.print-blueprint-mode #print-area { display: none !important; }
+      body.print-blueprint-mode #print-blueprint-area {
+        display: block !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 8mm !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        font-family: "Cambria Math", "Cambria", "Times New Roman", serif !important;
+      }
+      body:not(.print-blueprint-mode) #print-blueprint-area { display: none !important; }
+      body:not(.print-blueprint-mode) #print-area {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 8mm !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        font-family: "Cambria Math", "Cambria", "Times New Roman", serif !important;
+      }
+      .print\:break-before-page {
+        break-before: page;
+        page-break-before: always;
+      }
+      #paperQuestionsContainer > div {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* Clean examination layout without horizontal borders or option boxes */
+      .exam-q-row,
+      .exam-section-header,
+      #paperQuestionsContainer div {
+        border-bottom: none !important;
+        box-shadow: none !important;
+      }
+      .mcq-option-box {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+    }
+
+    .active-nav {
+      background-color: rgba(255, 255, 255, 0.12);
+      border-left: 4px solid #38bdf8;
+      color: #ffffff !important;
+    }
+    #print-area, #print-blueprint-area {
+      border: 2px solid #1f2937;
+    }
+    .table-scroll-container::-webkit-scrollbar,
+    .dropdown-scroll-container::-webkit-scrollbar,
+    .sidebar-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .table-scroll-container::-webkit-scrollbar-track,
+    .dropdown-scroll-container::-webkit-scrollbar-track,
+    .sidebar-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .table-scroll-container::-webkit-scrollbar-thumb,
+    .dropdown-scroll-container::-webkit-scrollbar-thumb,
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden font-sans relative">
+
+  <!-- AUTHENTICATION OVERLAY MODAL -->
+  <div id="authOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 p-8 overflow-hidden relative">
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 bg-[#11244e] text-sky-400 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-md font-black text-3xl">
+          ∑
+        </div>
+        <h3 class="text-xl font-bold text-gray-900" id="authBoxTitle">Sign In</h3>
+        <p class="text-xs text-gray-500 mt-1" id="authBoxSubtitle">Enter your credentials to access the Question Paper Generator.</p>
+      </div>
+
+      <div id="authAlert" class="hidden text-xs p-3 rounded-lg mb-4 text-center font-medium"></div>
+
+      <!-- 1. LOGIN FORM -->
+      <form id="formLogin" class="space-y-4" onsubmit="executeLogin(event)">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+          <input type="email" id="loginEmail" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="teacher@school.com" />
+        </div>
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-semibold text-gray-700">Password</label>
+            <button type="button" onclick="showAuthView('forgot')" class="text-xs text-blue-600 hover:underline">Forgot Password?</button>
+          </div>
+          <input type="password" id="loginPassword" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" />
+        </div>
+        <button type="submit" class="w-full bg-[#11244e] hover:bg-blue-900 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm">
+          Sign In
+        </button>
+        <div class="text-center pt-2 text-xs text-gray-600">
+          Don't have an account? 
+          <button type="button" onclick="showAuthView('signup')" class="text-blue-600 font-semibold hover:underline">Sign Up</button>
+        </div>
+      </form>
+
+      <!-- 2. SIGN UP FORM -->
+      <form id="formSignup" class="space-y-3 hidden" onsubmit="executeSignup(event)">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Full Name</label>
+          <input type="text" id="regName" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Ramesh Patel" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+          <input type="email" id="regEmail" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="teacher@school.com" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+          <input type="password" id="regPassword" required minlength="6" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Min. 6 characters" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Security Question</label>
+          <select id="regSecQuestion" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            <option value="school">What was the name of your first school?</option>
+            <option value="city">In what city or town were you born?</option>
+            <option value="subject">What is your favorite academic subject?</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Security Answer</label>
+          <input type="text" id="regSecAnswer" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your secret answer" />
+        </div>
+        <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm mt-2">
+          Create Account
+        </button>
+        <div class="text-center pt-2 text-xs text-gray-600">
+          Already registered? 
+          <button type="button" onclick="showAuthView('login')" class="text-blue-600 font-semibold hover:underline">Sign In</button>
+        </div>
+      </form>
+
+      <!-- 3. FORGOT PASSWORD FORM -->
+      <form id="formForgot" class="space-y-3 hidden" onsubmit="executeResetPassword(event)">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Registered Email Address</label>
+          <input type="email" id="forgotEmail" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="teacher@school.com" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Security Question</label>
+          <select id="forgotSecQuestion" class="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            <option value="school">What was the name of your first school?</option>
+            <option value="city">In what city or town were you born?</option>
+            <option value="subject">What is your favorite academic subject?</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Security Answer</label>
+          <input type="text" id="forgotSecAnswer" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Your secret answer" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">New Password</label>
+          <input type="password" id="forgotNewPassword" required minlength="6" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Min. 6 characters" />
+        </div>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-sm mt-2">
+          Reset Password
+        </button>
+        <div class="text-center pt-2 text-xs text-gray-600">
+          <button type="button" onclick="showAuthView('login')" class="text-blue-600 font-semibold hover:underline">Back to Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AUTO-UPDATE TOAST -->
+  <div id="update-toast" class="hidden fixed bottom-6 right-6 z-50 bg-[#11244e] text-white px-5 py-3.5 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-4">
+    <div>
+      <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Update Available</span>
+      </div>
+      <p class="text-xs text-slate-300 mt-0.5">A new version was deployed.</p>
+    </div>
+    <button type="button" id="btnReloadApp" class="px-3.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow transition">
+      Refresh to Update
+    </button>
+  </div>
+
+  <!-- MOBILE SIDEBAR BACKDROP -->
+  <div id="sidebarBackdrop" onclick="toggleMobileSidebar(false)" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-xs transition-opacity"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="mainSidebar" class="fixed inset-y-0 left-0 z-40 w-72 md:w-64 bg-[#11244e] text-slate-300 flex flex-col justify-between flex-shrink-0 select-none no-print overflow-y-auto sidebar-scroll transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static md:h-screen">
+    <div>
+      <div class="p-3 border-b border-slate-700/60 bg-[#0d1c3d] flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Control Panel</span>
+          <button type="button" onclick="toggleMobileSidebar(false)" class="md:hidden text-slate-400 hover:text-white p-1">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between bg-slate-800/80 p-2 rounded-xl border border-slate-700/60 shadow-sm">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div 
+              class="relative flex-shrink-0 group/logo cursor-pointer" 
+              onclick="triggerCustomLogoUpload(event)"
+              title="Click here to upload / change photo"
+            >
+              <img id="sidebarCustomLogo" src="" alt="Profile" class="hidden w-9 h-9 object-cover rounded-lg border border-slate-500/80 shadow bg-white" />
+              <div id="sidebarLogoPlaceholder" class="w-9 h-9 rounded-lg border border-dashed border-slate-500 flex flex-col items-center justify-center bg-slate-700/60 text-slate-400 hover:border-sky-400 hover:text-sky-300 transition">
+                <i data-lucide="camera" class="w-4 h-4"></i>
+              </div>
+              <div class="hidden group-hover/logo:flex absolute inset-0 bg-black/60 rounded-lg items-center justify-center text-white text-[9px] font-bold">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </div>
+            </div>
+
+            <div class="flex flex-col min-w-0">
+              <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Educator</span>
+              <div class="flex items-center gap-1 group/name">
+                <span id="sidebarCustomName" class="text-xs font-bold text-white truncate max-w-[120px]">Prof. R. Patel</span>
+                <button type="button" onclick="promptEditCustomName(event)" class="text-slate-500 hover:text-sky-400 opacity-60 hover:opacity-100 transition" title="Edit name">
+                  <i data-lucide="pencil" class="w-3 h-3"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <input type="file" id="sidebarLogoInput" accept="image/*" class="hidden" onchange="handleSidebarLogoUpload(event)" />
+
+        <button 
+          type="button" 
+          onclick="switchView('dashboard'); toggleMobileSidebar(false);" 
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 border border-slate-600/60 shadow transition group text-left"
+          title="Go to Dashboard"
+        >
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl font-black text-sky-400 leading-none group-hover:scale-110 transition-transform">∑</span>
+            <div class="leading-tight">
+              <span class="text-xs font-black tracking-wider text-white uppercase block">Paper</span>
+              <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase block">Generator</span>
+            </div>
+          </div>
+          <i data-lucide="sparkle" class="w-3.5 h-3.5 text-slate-500 group-hover:text-sky-400 transition"></i>
+        </button>
+      </div>
+
+      <!-- NAVIGATION BUTTONS -->
+      <nav class="mt-2 flex flex-col space-y-1">
+        <button type="button" onclick="switchView('dashboard'); toggleMobileSidebar(false);" id="nav-dashboard" class="flex items-center gap-3 px-6 py-3 text-sm font-medium active-nav transition-colors">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+        </button>
+        <button type="button" onclick="switchView('generate'); toggleMobileSidebar(false);" id="nav-generate" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-slate-800/50 hover:text-white transition-colors">
+          <i data-lucide="sparkles" class="w-4 h-4"></i> Generate Paper
+        </button>
+        <button type="button" onclick="switchView('board-exam'); toggleMobileSidebar(false);" id="nav-board-exam" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-slate-800/50 hover:text-white transition-colors text-amber-300">
+          <i data-lucide="graduation-cap" class="w-4 h-4"></i> Board Exam Paper
+        </button>
+        <button type="button" onclick="switchView('gujcet-exam'); toggleMobileSidebar(false);" id="nav-gujcet-exam" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-slate-800/50 hover:text-white transition-colors text-cyan-300">
+          <i data-lucide="file-check-2" class="w-4 h-4"></i> GUJCET Paper
+        </button>
+        <button type="button" onclick="switchView('questions'); toggleMobileSidebar(false);" id="nav-questions" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-slate-800/50 hover:text-white transition-colors">
+          <i data-lucide="help-circle" class="w-4 h-4"></i> Question Bank
+        </button>
+        <button type="button" onclick="switchView('chapters'); toggleMobileSidebar(false);" id="nav-chapters" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-slate-800/50 hover:text-white transition-colors">
+          <i data-lucide="book-open" class="w-4 h-4"></i> Chapters
+        </button>
+        <button type="button" onclick="switchView('blueprints'); toggleMobileSidebar(false);" id="nav-blueprints" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-slate-800/50 hover:text-white transition-colors">
+          <i data-lucide="layers" class="w-4 h-4"></i> Blueprints
+        </button>
+        <button type="button" onclick="switchView('previous'); toggleMobileSidebar(false);" id="nav-previous" class="flex items-center gap-3 px-6 py-3 text-sm font-medium hover:bg-slate-800/50 hover:text-white transition-colors">
+          <i data-lucide="file-text" class="w-4 h-4"></i> Previous Papers
+        </button>
+      </nav>
+    </div>
+
+    <!-- LOCAL JSON BACKUPS -->
+    <div class="border-t border-slate-700/50 p-4 space-y-2 pb-12 md:pb-4">
+      <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-[11px] text-emerald-300 flex items-center justify-between">
+        <span class="flex items-center gap-1.5"><i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Local Storage</span>
+        <span class="font-bold text-[10px] uppercase tracking-wider text-emerald-400" id="sidebarCloudBadge">Ready</span>
+      </div>
+
+      <div class="pt-2 border-t border-slate-700/40 space-y-1.5">
+        <button type="button" onclick="exportDataBackup()" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold bg-slate-800/70 hover:bg-slate-800 text-white rounded transition-colors">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i> Export Backup (.json)
+        </button>
+        <button type="button" onclick="document.getElementById('importBackupInput').click()" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold bg-slate-800/70 hover:bg-slate-800 text-white rounded transition-colors">
+          <i data-lucide="upload" class="w-3.5 h-3.5 text-blue-400"></i> Restore Backup (.json)
+        </button>
+        <input type="file" id="importBackupInput" accept=".json" class="hidden" onchange="importDataBackup(event)" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN VIEWPORT -->
+  <main class="flex-1 flex flex-col overflow-y-auto w-full">
+    <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-3 no-print flex justify-between items-center sticky top-0 z-20 shadow-xs">
+      <div class="flex items-center gap-3">
+        <button type="button" onclick="toggleMobileSidebar(true)" class="md:hidden p-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100" title="Open Menu">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <div>
+          <h2 class="text-sm md:text-base font-bold text-gray-800 truncate max-w-[200px] sm:max-w-none" id="headerSchoolName">Bai Avabai Highschool</h2>
+          <p class="text-[10px] md:text-xs text-gray-500 hidden sm:block">GSEB Question Paper Generator (Std 9 to 12 All Streams)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 md:gap-3">
+        <button type="button" id="btnHeaderInstall" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow transition-colors">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Install App</span>
+        </button>
+        <div id="userHeaderProfile" class="flex items-center gap-2 pl-2 md:pl-3 border-l border-gray-200">
+          <span id="currentUserLabel" class="text-xs font-semibold text-gray-700 hidden sm:inline">Educator</span>
+          <button type="button" onclick="handleLogout()" class="px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors flex items-center gap-1" title="Sign Out">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Log Out</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="p-4 md:p-6 pb-24">
+      <!-- DASHBOARD VIEW -->
+      <section id="view-dashboard" class="space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+          <p class="text-sm text-gray-500">Summary of question repository and examination templates across GSEB Std 9 to 12.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-semibold text-gray-500 uppercase">Total Questions</span>
+              <div class="text-2xl font-bold text-gray-900 mt-2" id="statTotalQuestions">0</div>
+            </div>
+            <span class="text-xs text-emerald-600 font-medium mt-3">Across all GSEB subjects</span>
+          </div>
+
+          <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-semibold text-gray-500 uppercase">Total Chapters</span>
+              <div class="text-2xl font-bold text-gray-900 mt-2" id="statTotalChapters">0</div>
+            </div>
+            <span class="text-xs text-gray-500 font-medium mt-3">Registered across standards</span>
+          </div>
+
+          <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-semibold text-gray-500 uppercase">Saved Blueprints</span>
+              <div class="text-2xl font-bold text-gray-900 mt-2" id="statTotalBlueprints">0</div>
+            </div>
+            <span class="text-xs text-gray-500 font-medium mt-3">Ready to generate</span>
+          </div>
+
+          <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-500 uppercase">Storage Status</span>
+                <span id="storageModeBadge" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">Live Active</span>
+              </div>
+              <div class="text-lg font-bold text-gray-900 mt-2" id="storageStatusText">Firestore & IDB</div>
+              <p class="text-xs text-emerald-600 font-medium truncate" id="storageStatusDesc">● Cross-Device Realtime Sync</p>
+            </div>
+            <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+              <span class="text-xs text-slate-500 font-medium">Automatic cloud backup active</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 relative">
+          <button type="button" onclick="loadExamPreset('Board Exam')" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow">
+            <i data-lucide="graduation-cap" class="w-4 h-4"></i> Board Exam Blueprint
+          </button>
+          <button type="button" onclick="loadExamPreset('GUJCET Exam')" class="bg-cyan-700 hover:bg-cyan-800 text-white px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors shadow">
+            <i data-lucide="file-check-2" class="w-4 h-4"></i> GUJCET Blueprint
+          </button>
+          <button type="button" onclick="switchView('questions')" class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors">
+            <span>➕</span> Manage Questions
+          </button>
+          <button type="button" onclick="switchView('previous')" class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors">
+            <span>💾</span> View Archive
+          </button>
+        </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-semibold text-gray-800">Recent Papers</h3>
+            <button type="button" onclick="switchView('previous')" class="text-blue-600 hover:underline text-xs font-semibold">View All →</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-gray-100 text-gray-500 font-medium text-xs">
+                  <th class="pb-3 px-3">Title / Exam</th>
+                  <th class="pb-3 px-3">Standard / Subject / Medium</th>
+                  <th class="pb-3 px-3">Total Marks</th>
+                  <th class="pb-3 px-3">Date (DD/MM/YYYY)</th>
+                  <th class="pb-3 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-700" id="recentPapersTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOARD EXAM VIEW -->
+      <section id="view-board-exam" class="hidden space-y-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-amber-900">GSEB Board Exam Preparation (Std 10 & 12)</h2>
+            <p class="text-sm text-gray-500">Curate and import GSEB board-pattern question papers.</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="openImportModal('board')" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow">
+              <i data-lucide="file-up" class="w-4 h-4"></i> Import Board PDF / File
+            </button>
+            <button type="button" onclick="loadExamPreset('Board Exam')" class="bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2">
+              <i data-lucide="settings" class="w-4 h-4"></i> Configure Blueprint
+            </button>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-800 mb-4">Board Exam Question Pool</h3>
+          <div class="overflow-x-auto max-h-[68vh] table-scroll-container border border-gray-200 rounded-lg">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th class="py-3 px-4 bg-gray-50">Std.</th>
+                  <th class="py-3 px-4 bg-gray-50">Subject</th>
+                  <th class="py-3 px-4 bg-gray-50">Chapter</th>
+                  <th class="py-3 px-4 bg-gray-50">Marks</th>
+                  <th class="py-3 px-4 bg-gray-50">Type</th>
+                  <th class="py-3 px-6 bg-gray-50">Question</th>
+                  <th class="py-3 px-4 bg-gray-50">Answer</th>
+                </tr>
+              </thead>
+              <tbody id="boardQuestionsTbody" class="divide-y divide-gray-100 text-gray-700"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- GUJCET EXAM VIEW -->
+      <section id="view-gujcet-exam" class="hidden space-y-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-cyan-900">GUJCET Exam Section</h2>
+            <p class="text-sm text-gray-500">Dedicated 40-mark MCQ assessment pattern for Std 12 Science.</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="openImportModal('gujcet')" class="bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow">
+              <i data-lucide="file-up" class="w-4 h-4"></i> Import GUJCET PDF / File
+            </button>
+            <button type="button" onclick="loadExamPreset('GUJCET Exam')" class="bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> Generate GUJCET Paper
+            </button>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-800 mb-4">GUJCET Question Pool</h3>
+          <div class="overflow-x-auto max-h-[68vh] table-scroll-container border border-gray-200 rounded-lg">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th class="py-3 px-4 bg-gray-50">Std.</th>
+                  <th class="py-3 px-4 bg-gray-50">Subject</th>
+                  <th class="py-3 px-4 bg-gray-50">Chapter</th>
+                  <th class="py-3 px-4 bg-gray-50">Marks</th>
+                  <th class="py-3 px-6 bg-gray-50">Question</th>
+                  <th class="py-3 px-4 bg-gray-50">Answer</th>
+                </tr>
+              </thead>
+              <tbody id="gujcetQuestionsTbody" class="divide-y divide-gray-100 text-gray-700"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUESTION BANK VIEW -->
+      <section id="view-questions" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">GSEB Question Bank</h2>
+            <p class="text-sm text-gray-500">Filter, edit, and manage questions across all GSEB standards (9 to 12) and streams.</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" id="btnSaveQuestions" onclick="manualSaveQuestions()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow">
+              <i data-lucide="save" class="w-4 h-4"></i> Save Questions
+            </button>
+            <button type="button" onclick="openImportModal('general')" class="bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+              <i data-lucide="file-up" class="w-4 h-4"></i> Bulk Import
+            </button>
+            <button type="button" id="btnOpenAddQuestion" class="bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add Question
+            </button>
+          </div>
+        </div>
+
+        <!-- FILTERS -->
+        <div class="bg-white p-4 rounded-lg border border-gray-200 flex flex-wrap items-center gap-3">
+          <input type="text" id="filterText" oninput="applyQuestionFilter()" placeholder="Search question text..." class="border rounded px-3 py-1.5 text-sm w-44 focus:ring-1 focus:ring-blue-500 outline-none" />
+          
+          <select id="filterStd" onchange="onFilterStdOrSubjectChange(true)" class="border rounded px-3 py-1.5 text-sm text-gray-700 font-semibold bg-white">
+            <option value="">All Standards</option>
+            <option value="9">Std 9</option>
+            <option value="10">Std 10</option>
+            <option value="11">Std 11</option>
+            <option value="12">Std 12</option>
+          </select>
+
+          <select id="filterLang" onchange="onFilterMediumChange()" class="border rounded px-3 py-1.5 text-sm text-gray-700 bg-white">
+            <option value="">All Mediums</option>
+            <option value="English">English</option>
+            <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+            <option value="Bilingual">Bilingual</option>
+          </select>
+
+          <select id="filterSubject" onchange="onFilterStdOrSubjectChange(false)" class="border rounded px-3 py-1.5 text-sm text-gray-700 bg-white max-w-xs">
+            <option value="">All GSEB Subjects</option>
+          </select>
+
+          <select id="filterCategory" onchange="applyQuestionFilter()" class="border rounded px-3 py-1.5 text-sm text-gray-600 bg-white">
+            <option value="">All Categories</option>
+            <option value="General">General Bank</option>
+            <option value="Board Exam">Board Exam</option>
+            <option value="GUJCET">GUJCET</option>
+          </select>
+
+          <select id="filterChapter" onchange="applyQuestionFilter()" class="border rounded px-3 py-1.5 text-sm text-gray-600 bg-white max-w-xs">
+            <option value="">All Chapters</option>
+          </select>
+          <select id="filterType" onchange="applyQuestionFilter()" class="border rounded px-3 py-1.5 text-sm text-gray-600 bg-white">
+            <option value="">All Types</option>
+            <option value="MCQ">MCQ</option>
+            <option value="Short Answer">Short Answer</option>
+            <option value="Long Answer">Long Answer</option>
+          </select>
+        </div>
+
+        <!-- TABLE -->
+        <div class="bg-white rounded-lg border border-gray-200 overflow-x-auto max-h-[68vh] table-scroll-container shadow-sm">
+          <table class="w-full text-left text-sm min-w-[1100px]">
+            <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+              <tr>
+                <th class="py-3.5 px-3 bg-gray-50">Std.</th>
+                <th class="py-3.5 px-3 bg-gray-50">Subject</th>
+                <th class="py-3.5 px-3 bg-gray-50">Category</th>
+                <th class="py-3.5 px-3 bg-gray-50">Chapter</th>
+                <th class="py-3.5 px-3 bg-gray-50">Marks</th>
+                <th class="py-3.5 px-3 w-40 bg-gray-50">Type</th>
+                <th class="py-3.5 px-3 w-36 bg-gray-50">Medium</th>
+                <th class="py-3.5 px-4 min-w-[280px] bg-gray-50">Question</th>
+                <th class="py-3.5 px-3 min-w-[180px] bg-gray-50">Answer</th>
+                <th class="py-3.5 px-2 text-center bg-gray-50">Usage</th>
+                <th class="py-3.5 px-3 text-right bg-gray-50">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="questions-tbody" class="divide-y divide-gray-100 text-gray-700"></tbody>
+          </table>
+        </div>
+
+        <!-- Add Question Dialog -->
+        <dialog id="addQuestionModal" class="p-6 rounded-xl border border-gray-200 shadow-xl backdrop:bg-black/40 w-full max-w-lg">
+          <form id="addQuestionForm" class="space-y-4">
+            <h3 class="text-lg font-bold text-gray-900 border-b pb-2">Add New GSEB Question</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="qStd" class="block text-xs font-medium text-gray-700 mb-1">Standard:</label>
+                <select id="qStd" required class="w-full border rounded-md p-2 text-sm bg-white" onchange="onModalStdOrMediumChange()">
+                  <option value="9">Std 9</option>
+                  <option value="10">Std 10</option>
+                  <option value="11">Std 11</option>
+                  <option value="12" selected>Std 12</option>
+                </select>
+              </div>
+              <div>
+                <label for="qMedium" class="block text-xs font-medium text-gray-700 mb-1">Medium:</label>
+                <select id="qMedium" required class="w-full border rounded-md p-2 text-sm bg-white" onchange="onModalStdOrMediumChange()">
+                  <option value="English" selected>English</option>
+                  <option value="Gujarati">Gujarati</option>
+                  <option value="Bilingual">Bilingual</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label for="qSubject" class="block text-xs font-medium text-gray-700 mb-1">GSEB Subject:</label>
+              <select id="qSubject" required class="w-full border rounded-md p-2 text-sm bg-white" onchange="updateQuestionModalChapters()"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="qCategory" class="block text-xs font-medium text-gray-700 mb-1">Category:</label>
+                <select id="qCategory" required class="w-full border rounded-md p-2 text-sm bg-white">
+                  <option value="General">General</option>
+                  <option value="Board Exam">Board Exam</option>
+                  <option value="GUJCET">GUJCET</option>
+                </select>
+              </div>
+              <div>
+                <label for="qChapterSelect" class="block text-xs font-medium text-gray-700 mb-1">Chapter:</label>
+                <select id="qChapterSelect" required class="w-full border rounded-md p-2 text-sm bg-white"></select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="qType" class="block text-xs font-medium text-gray-700 mb-1">Question Type:</label>
+                <select id="qType" required class="w-full border rounded-md p-2 text-sm bg-white">
+                  <option value="MCQ">MCQ</option>
+                  <option value="Short Answer" selected>Short Answer</option>
+                  <option value="Long Answer">Long Answer</option>
+                </select>
+              </div>
+              <div>
+                <label for="qMarks" class="block text-xs font-medium text-gray-700 mb-1">Marks:</label>
+                <input type="number" id="qMarks" required min="1" max="20" value="2" class="w-full border rounded-md p-2 text-sm" />
+              </div>
+            </div>
+            <div>
+              <label for="qTextEn" class="block text-xs font-medium text-gray-700 mb-1">Question (English):</label>
+              <textarea id="qTextEn" rows="2" class="w-full border rounded-md p-2 text-sm cambria-math-text" placeholder="Enter English text... (e.g. Question text. (A) Option 1 (B) Option 2 (C) Option 3 (D) Option 4)"></textarea>
+            </div>
+            <div>
+              <label for="qTextGu" class="block text-xs font-medium text-gray-700 mb-1">Question (Gujarati):</label>
+              <textarea id="qTextGu" rows="2" class="w-full border rounded-md p-2 text-sm" placeholder="ગુજરાતી પ્રશ્ન દાખલ કરો... (દા.ત. પ્રશ્ન વિગત (A) વિકલ્પ ૧ (B) વિકલ્પ ૨ (C) વિકલ્પ ૩ (D) વિકલ્પ ૪)"></textarea>
+            </div>
+            <div>
+              <label for="qAnswer" class="block text-xs font-medium text-gray-700 mb-1">Answer / Solution (Optional):</label>
+              <textarea id="qAnswer" rows="2" class="w-full border rounded-md p-2 text-sm cambria-math-text" placeholder="Enter answer or solution key..."></textarea>
+            </div>
+            <div class="flex gap-2 justify-end pt-3 border-t">
+              <button type="button" id="btnCloseQuestionModal" class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100">Cancel</button>
+              <button type="submit" class="px-4 py-2 text-sm bg-blue-900 text-white rounded-md hover:bg-blue-800">Save Question</button>
+            </div>
+          </form>
+        </dialog>
+      </section>
+
+      <!-- CHAPTERS VIEW -->
+      <section id="view-chapters" class="hidden space-y-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">Chapters Management</h2>
+            <p class="text-sm text-gray-500">Configure syllabus units and chapters per GSEB subject, standard, and medium.</p>
+          </div>
+          <button type="button" id="btnOpenAddChapter" class="bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2">
+            <span>➕</span> Add Chapter
+          </button>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 overflow-x-auto max-h-[68vh] table-scroll-container shadow-sm">
+          <table class="w-full text-left text-sm" id="chaptersTable">
+            <thead class="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+              <tr>
+                <th class="py-3 px-4 bg-gray-50">Subject</th>
+                <th class="py-3 px-4 bg-gray-50">Medium</th>
+                <th class="py-3 px-4 bg-gray-50">Standard</th>
+                <th class="py-3 px-4 w-36 bg-gray-50">Chapter Number</th>
+                <th class="py-3 px-4 bg-gray-50">Chapter Name</th>
+                <th class="py-3 px-4 text-right bg-gray-50">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="chaptersTableBody" class="divide-y divide-gray-100 text-gray-700"></tbody>
+          </table>
+        </div>
+
+        <!-- ADD CHAPTER DIALOG -->
+        <dialog id="addChapterModal" class="p-6 rounded-xl border border-gray-200 shadow-xl backdrop:bg-black/40 w-full max-w-md">
+          <form id="addChapterForm" class="space-y-4" onsubmit="handleChapterFormSubmit(event)">
+            <div class="flex justify-between items-center border-b pb-2">
+              <h3 class="text-lg font-bold text-gray-900">Add New Chapter</h3>
+              <button type="button" onclick="document.getElementById('addChapterModal').close()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="chStd" class="block text-xs font-semibold text-gray-700 mb-1">Standard:</label>
+                <select id="chStd" required class="w-full border rounded-md p-2 text-sm bg-white" onchange="onChapterModalStdOrMediumChange()">
+                  <option value="Std 9">Std 9</option>
+                  <option value="Std 10">Std 10</option>
+                  <option value="Std 11">Std 11</option>
+                  <option value="Std 12" selected>Std 12</option>
+                </select>
+              </div>
+              <div>
+                <label for="chMedium" class="block text-xs font-semibold text-gray-700 mb-1">Medium:</label>
+                <select id="chMedium" required class="w-full border rounded-md p-2 text-sm bg-white" onchange="onChapterModalStdOrMediumChange()">
+                  <option value="English" selected>English</option>
+                  <option value="Gujarati">Gujarati</option>
+                  <option value="Bilingual">Bilingual</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label for="chSubject" class="block text-xs font-semibold text-gray-700 mb-1">Subject:</label>
+              <select id="chSubject" required class="w-full border rounded-md p-2 text-sm bg-white"></select>
+            </div>
+            <div>
+              <label for="chNum" class="block text-xs font-semibold text-gray-700 mb-1">Chapter Number:</label>
+              <input type="number" id="chNum" required min="1" max="50" value="1" class="w-full border rounded-md p-2 text-sm" />
+            </div>
+            <div>
+              <label for="chTitle" class="block text-xs font-semibold text-gray-700 mb-1">Chapter Name / Title:</label>
+              <input type="text" id="chTitle" required placeholder="e.g. Relations and Functions / સંબંધ અને વિધેય" class="w-full border rounded-md p-2 text-sm" />
+            </div>
+            <div class="flex gap-2 justify-end pt-3 border-t">
+              <button type="button" onclick="document.getElementById('addChapterModal').close()" class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100">Cancel</button>
+              <button type="submit" class="px-4 py-2 text-sm bg-blue-900 text-white font-medium rounded-md hover:bg-blue-800">Save Chapter</button>
+            </div>
+          </form>
+        </dialog>
+      </section>
+
+      <!-- BLUEPRINTS VIEW -->
+      <section id="view-blueprints" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">Blueprint Designer</h2>
+            <p class="text-sm text-gray-500">Configure examination structure, school name, GSEB subject, medium, and chapter-wise allocation matrix.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="openBlueprintMultiModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-sm transition-colors">
+              <i data-lucide="file-symlink" class="w-4 h-4"></i> Import Blueprint (Image / PDF / Word / Sheets)
+            </button>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg border border-gray-200 space-y-6 shadow-sm">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">School / Institution Name</label>
+              <input type="text" id="bpSchoolName" value="Bai Avabai Highschool, Valsad" placeholder="Enter school name..." class="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+
+            <!-- SEPARATE EXAM TYPE DROPDOWN -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+              <select id="bpExamTypeSelect" onchange="handleExamTypePresetChange(this.value)" class="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-white font-semibold text-blue-950 focus:ring-1 focus:ring-blue-500">
+                <option value="Unit Test">Unit Test (એકમ કસોટી)</option>
+                <option value="First Test" selected>First Test (પ્રથમ સત્ર)</option>
+                <option value="Second Test">Second Test (દ્વિતીય સત્ર)</option>
+                <option value="Annual Exam">Annual Exam (વાર્ષિક પરીક્ષા)</option>
+                <option value="Board Exam">Board Exam (બોર્ડ પરીક્ષા)</option>
+                <option value="GUJCET Exam">GUJCET Exam</option>
+                <option value="Custom">Custom / Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Blueprint Title / Header</label>
+              <input type="text" id="bpName" value="First Terminal Examination" class="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Standard</label>
+              <select id="bpStd" class="w-full border rounded px-3 py-2 text-sm bg-white" onchange="onBlueprintStdOrMediumChange()">
+                <option value="9">Std 9</option>
+                <option value="10">Std 10</option>
+                <option value="11">Std 11</option>
+                <option value="12" selected>Std 12</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Medium</label>
+              <select id="bpMedium" class="w-full border rounded px-3 py-2 text-sm bg-white" onchange="onBlueprintStdOrMediumChange()">
+                <option value="English" selected>English Medium</option>
+                <option value="Gujarati">Gujarati Medium (ગુજરાતી)</option>
+                <option value="Bilingual">Bilingual (English + ગુજરાતી)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">GSEB Subject</label>
+              <select id="bpSubject" class="w-full border rounded px-3 py-2 text-sm bg-white" onchange="refreshAllocationOptions()"></select>
+            </div>
+
+            <!-- SEPARATE MANUAL TARGET MARKS INPUT -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Target Marks (Manual)</label>
+              <input type="number" id="bpTargetMarks" min="1" max="500" value="50" oninput="updateAllocationMarksSummary()" class="w-full border border-gray-300 rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-900 bg-white" placeholder="e.g. 25, 50, 80" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+              <input type="text" id="bpDuration" value="2 Hours" class="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Instructions — English</label>
+            <textarea id="bpInstEn" rows="2" class="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500 cambria-math-text">All questions are compulsory. Calculations must be shown clearly.</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Instructions — Gujarati</label>
+            <textarea id="bpInstGu" rows="2" class="w-full border rounded px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500">બધા પ્રશ્નોના ઉત્તર આપવા ફરજિયાત છે. ગણતરી સ્પષ્ટ દર્શાવવી.</textarea>
+          </div>
+          <div class="border-t pt-4">
+            <div class="flex justify-between items-center mb-3">
+              <div>
+                <h3 class="text-base font-semibold text-gray-800">Chapter-wise Allocation Matrix</h3>
+                <p class="text-xs text-gray-500">Configure questions for 1M, 2M, 3M, 4M, and custom manual marks per chapter.</p>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1.5 rounded bg-gray-100 text-gray-700 shadow-2xs" id="allocationTotalSummary">
+                Allocated: 0 / 50 Marks
+              </span>
+            </div>
+
+            <!-- HORIZONTAL MATRIX TABLE -->
+            <div class="overflow-x-auto table-scroll-container border border-gray-200 rounded-xl mb-4 shadow-2xs bg-white">
+              <table class="w-full text-left text-xs min-w-[880px]">
+                <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-gray-200">
+                  <tr>
+                    <th class="py-3 px-4 w-[26%]">Chapter</th>
+                    <th class="py-3 px-2 text-center w-[12%]">1 Mark (MCQ/Obj)</th>
+                    <th class="py-3 px-2 text-center w-[12%]">2 Marks (Short)</th>
+                    <th class="py-3 px-2 text-center w-[12%]">3 Marks (Short)</th>
+                    <th class="py-3 px-2 text-center w-[12%]">4 Marks (Long)</th>
+                    <th class="py-3 px-2 text-center w-[16%]">Custom Marks (Manual)</th>
+                    <th class="py-3 px-3 text-center w-[10%]">Row Total</th>
+                  </tr>
+                </thead>
+                <tbody id="allocationsMatrixBody" class="divide-y divide-gray-100 text-gray-800 font-medium"></tbody>
+              </table>
+            </div>
+
+            <div class="flex flex-wrap gap-3 items-center">
+              <div class="text-xs text-gray-500 italic">
+                * Note: Changes in question counts automatically update availability badges and the grand allocation sum.
+              </div>
+              <div class="ml-auto flex gap-2">
+                <button type="button" onclick="saveBlueprintOnly(true)" class="bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5 shadow-sm transition-colors">
+                  <i data-lucide="save" class="w-4 h-4"></i> Save Blueprint
+                </button>
+                <button type="button" onclick="saveAndGenerateFromBlueprint()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5 shadow-sm transition-colors">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i> Generate Paper Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAVED BLUEPRINTS MANAGEMENT TABLE -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5 shadow-sm space-y-3">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-base font-semibold text-gray-800">Saved Blueprints Library</h3>
+              <p class="text-xs text-gray-500">Access, reload into designer, or delete your preserved blueprint templates.</p>
+            </div>
+            <span class="text-xs font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700" id="savedBlueprintsCountBadge">0 Saved</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 text-gray-500 font-medium text-xs bg-gray-50">
+                  <th class="py-2.5 px-3">Title / Exam</th>
+                  <th class="py-2.5 px-3">Standard / Subject / Medium</th>
+                  <th class="py-2.5 px-3 text-center">Target Marks</th>
+                  <th class="py-2.5 px-3 text-center">Allocated Rules</th>
+                  <th class="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-700 text-xs" id="blueprintsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PREVIOUS PAPERS VIEW -->
+      <section id="view-previous" class="hidden space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">Previous Papers Archive</h2>
+          <p class="text-sm text-gray-500">Access, reprint, or remove previously generated question papers.</p>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="border-b border-gray-100 text-gray-500 font-medium text-xs">
+                  <th class="pb-3 px-3">Title / Exam</th>
+                  <th class="pb-3 px-3">School Name</th>
+                  <th class="pb-3 px-3">Subject / Medium</th>
+                  <th class="pb-3 px-3">Standard</th>
+                  <th class="pb-3 px-3">Total Marks</th>
+                  <th class="pb-3 px-3">Date (DD/MM/YYYY)</th>
+                  <th class="pb-3 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-700" id="archiveTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- GENERATED PAPER VIEW -->
+      <section id="view-generate" class="hidden space-y-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 no-print">
+          <h1 class="text-xl font-bold text-gray-800">Generated Question Paper</h1>
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+              <input type="checkbox" id="toggleAnswerKeyCheckbox" onchange="toggleAnswerKeyView(this.checked)" class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4" />
+              <span>Show Answer Key</span>
+            </label>
+            <button type="button" onclick="printBlueprintOnly()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-medium px-4 py-2 rounded flex items-center gap-2 transition-colors">
+              <i data-lucide="layout" class="w-4 h-4"></i> Print Blueprint (PDF)
+            </button>
+            <button type="button" onclick="printPaperOnly()" class="bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded flex items-center gap-2 transition-colors">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print Paper Only
+            </button>
+            <button type="button" onclick="printWithSolutions()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium px-4 py-2 rounded flex items-center gap-2 transition-colors">
+              <i data-lucide="file-check" class="w-4 h-4"></i> Print with Solutions
+            </button>
+          </div>
+        </div>
+        <div id="print-area" class="bg-white p-10 max-w-4xl mx-auto shadow rounded border-2 border-gray-900 text-black cambria-math">
+          <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold tracking-tight uppercase cambria-math-text" id="previewSchoolName">BAI AVABAI HIGHSCHOOL, VALSAD</h1>
+            <h2 class="text-lg font-semibold mt-1 cambria-math-text" id="previewTitle">Final Exam</h2>
+          </div>
+          <div class="grid grid-cols-4 text-xs font-semibold border-t border-b border-gray-400 py-1.5 mb-4 cambria-math-text">
+            <div id="previewStd">Standard: 12</div>
+            <div id="previewSubject">Subject: Mathematics</div>
+            <div id="previewDate">Date: 25/09/2026</div>
+            <div class="text-right" id="previewMeta">Duration: 1 Hour | Total Marks: 10</div>
+          </div>
+          <div class="text-xs mb-4" id="previewInstructions"></div>
+          <div class="space-y-4 text-sm cambria-math" id="paperQuestionsContainer"></div>
+          <div id="paperAnswerKeyContainer" class="hidden mt-8 pt-6 border-t-2 border-dashed border-gray-400 print:break-before-page cambria-math">
+            <div class="text-center mb-6">
+              <h2 class="text-xl font-bold uppercase tracking-wide cambria-math-text">Answer Key & Marking Scheme</h2>
+            </div>
+            <div id="answerKeyList" class="space-y-3 text-sm cambria-math"></div>
+          </div>
+        </div>
+        <div id="print-blueprint-area" class="hidden bg-white p-10 max-w-4xl mx-auto shadow rounded border-2 border-gray-900 text-black cambria-math">
+          <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold tracking-tight uppercase cambria-math-text" id="bpPrintSchoolName">BAI AVABAI HIGHSCHOOL, VALSAD</h1>
+            <h2 class="text-lg font-semibold mt-1 cambria-math-text" id="bpPrintTitle">EXAMINATION BLUEPRINT</h2>
+          </div>
+          <div class="grid grid-cols-4 text-xs font-semibold border-t border-b border-gray-400 py-1.5 mb-4 cambria-math-text">
+            <div id="bpPrintStd">Standard: 12</div>
+            <div id="bpPrintSubject">Subject: Mathematics</div>
+            <div id="bpPrintDate">Date: 25/09/2026</div>
+            <div class="text-right" id="bpPrintMeta">Duration: 1 Hour | Total Marks: 10</div>
+          </div>
+          <table class="w-full text-left text-xs border border-collapse border-gray-400 mb-6 cambria-math-text">
+            <thead>
+              <tr class="bg-gray-100 text-center font-bold">
+                <th class="border border-gray-400 p-2 text-left">Chapter</th>
+                <th class="border border-gray-400 p-2">MCQ</th>
+                <th class="border border-gray-400 p-2">Short Answer</th>
+                <th class="border border-gray-400 p-2">Long Answer</th>
+                <th class="border border-gray-400 p-2">Total Ques</th>
+                <th class="border border-gray-400 p-2">Total Marks</th>
+              </tr>
+            </thead>
+            <tbody id="bpPrintTableBody"></tbody>
+            <tfoot id="bpPrintTableFoot" class="bg-gray-50 font-bold text-center"></tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- MODAL: MULTI-SOURCE BLUEPRINT IMPORTER -->
+  <dialog id="importBlueprintModal" class="p-6 rounded-xl border border-gray-200 shadow-xl backdrop:bg-black/40 w-full max-w-2xl">
+    <div class="space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <div class="flex items-center gap-2">
+          <i data-lucide="file-symlink" class="w-5 h-5 text-indigo-600"></i>
+          <h3 class="text-lg font-bold text-gray-900">Import Blueprint Rules</h3>
+        </div>
+        <button type="button" onclick="closeBlueprintMultiModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <!-- Format Selection Tabs -->
+      <div class="flex border-b border-gray-200 text-xs md:text-sm font-semibold">
+        <button type="button" id="bpTabBtnImg" onclick="switchBpImportTab('img')" class="px-4 py-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-1.5">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i> Photo / Image
+        </button>
+        <button type="button" id="bpTabBtnPdf" onclick="switchBpImportTab('pdf')" class="px-4 py-2 text-gray-500 hover:text-gray-700 flex items-center gap-1.5">
+          <i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF
+        </button>
+        <button type="button" id="bpTabBtnWord" onclick="switchBpImportTab('word')" class="px-4 py-2 text-gray-500 hover:text-gray-700 flex items-center gap-1.5">
+          <i data-lucide="file-type-2" class="w-3.5 h-3.5"></i> Word (.docx)
+        </button>
+        <button type="button" id="bpTabBtnSheet" onclick="switchBpImportTab('sheet')" class="px-4 py-2 text-gray-500 hover:text-gray-700 flex items-center gap-1.5 text-emerald-700 font-bold">
+          <i data-lucide="table" class="w-3.5 h-3.5"></i> Google Sheets
+        </button>
+      </div>
+
+      <!-- TAB 1: Photo / Screenshot OCR -->
+      <div id="bpTabContentImg" class="space-y-3">
+        <label for="blueprintImageFileInput" class="border-2 border-dashed border-indigo-200 rounded-xl p-5 text-center hover:border-indigo-500 hover:bg-indigo-50/20 transition-all cursor-pointer block select-none">
+          <i data-lucide="image" class="w-7 h-7 text-indigo-500 mx-auto mb-1.5 pointer-events-none"></i>
+          <span class="text-sm font-semibold text-gray-800 block pointer-events-none">Choose Blueprint Photo or Camera Capture</span>
+          <span class="text-xs text-gray-400 block pointer-events-none">Supports PNG, JPG, JPEG</span>
+          <span id="bpImageFileLabel" class="inline-block mt-2 text-xs font-semibold text-indigo-800 bg-indigo-50 px-3 py-1 rounded border border-indigo-200 pointer-events-none">No photo chosen</span>
+        </label>
+        <input type="file" id="blueprintImageFileInput" accept="image/*" class="hidden" onchange="handleBlueprintImageSelect(event)" />
+      </div>
+
+      <!-- TAB 2: PDF Document -->
+      <div id="bpTabContentPdf" class="hidden space-y-3">
+        <label for="blueprintPdfFileInput" class="border-2 border-dashed border-blue-200 rounded-xl p-5 text-center hover:border-blue-500 hover:bg-blue-50/20 transition-all cursor-pointer block select-none">
+          <i data-lucide="file-text" class="w-7 h-7 text-blue-600 mx-auto mb-1.5 pointer-events-none"></i>
+          <span class="text-sm font-semibold text-gray-800 block pointer-events-none">Choose Blueprint PDF Document</span>
+          <span class="text-xs text-gray-400 block pointer-events-none">Extracts text and table rows directly</span>
+          <span id="bpPdfFileLabel" class="inline-block mt-2 text-xs font-semibold text-blue-800 bg-blue-50 px-3 py-1 rounded border border-blue-200 pointer-events-none">No PDF chosen</span>
+        </label>
+        <input type="file" id="blueprintPdfFileInput" accept=".pdf" class="hidden" onchange="handleBlueprintPdfSelect(event)" />
+      </div>
+
+      <!-- TAB 3: Word .docx Document -->
+      <div id="bpTabContentWord" class="hidden space-y-3">
+        <label for="blueprintWordFileInput" class="border-2 border-dashed border-sky-200 rounded-xl p-5 text-center hover:border-sky-500 hover:bg-sky-50/20 transition-all cursor-pointer block select-none">
+          <i data-lucide="file-type-2" class="w-7 h-7 text-sky-600 mx-auto mb-1.5 pointer-events-none"></i>
+          <span class="text-sm font-semibold text-gray-800 block pointer-events-none">Choose Microsoft Word Document (.docx)</span>
+          <span class="text-xs text-gray-400 block pointer-events-none">Parses document tables via Mammoth.js</span>
+          <span id="bpWordFileLabel" class="inline-block mt-2 text-xs font-semibold text-sky-800 bg-sky-50 px-3 py-1 rounded border border-sky-200 pointer-events-none">No Word file chosen</span>
+        </label>
+        <input type="file" id="blueprintWordFileInput" accept=".docx" class="hidden" onchange="handleBlueprintWordSelect(event)" />
+      </div>
+
+      <!-- TAB 4: Google Sheets Blueprint -->
+      <div id="bpTabContentSheet" class="hidden space-y-3 bg-emerald-50/60 p-4 rounded-xl border border-emerald-200">
+        <label class="block text-xs font-bold text-emerald-950 uppercase tracking-wide">Google Sheet Link / Published URL:</label>
+        <div class="flex gap-2">
+          <input type="url" id="bpGoogleSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml or /edit" class="flex-1 border border-emerald-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none" />
+          <button type="button" onclick="fetchBlueprintGoogleSheet()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm whitespace-nowrap">
+            <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i> Fetch
+          </button>
+        </div>
+        <p class="text-[11px] text-emerald-800 leading-tight">
+          Ensure the sheet is shared as <strong>"Anyone with the link can view"</strong> or published to the web.
+        </p>
+      </div>
+
+      <!-- Process Status Alert -->
+      <div id="bpOcrStatus" class="hidden text-xs p-3 rounded-lg flex items-center gap-2"></div>
+
+      <!-- Extracted Text Area -->
+      <div id="bpOcrTextContainer" class="hidden space-y-1">
+        <label for="bpOcrRawText" class="block text-xs font-semibold text-gray-700">Parsed Content Preview (Editable):</label>
+        <textarea id="bpOcrRawText" rows="4" class="w-full border rounded p-2 text-xs font-mono"></textarea>
+      </div>
+
+      <div class="flex gap-2 justify-end pt-3 border-t">
+        <button type="button" onclick="closeBlueprintMultiModal()" class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100">Cancel</button>
+        <button type="button" id="btnExecuteBlueprintOcr" onclick="executeBlueprintMultiImport()" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="check" class="w-4 h-4"></i> Parse & Apply Allocation
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- BULK IMPORT QUESTIONS MODAL -->
+  <dialog id="importModal" class="p-6 rounded-xl border border-gray-200 shadow-xl backdrop:bg-black/40 w-full max-w-xl">
+    <div class="space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-lg font-bold text-gray-900">Bulk Import Questions</h3>
+        <button type="button" onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div>
+          <label for="importStdSelect" class="block text-xs font-bold text-blue-950 uppercase tracking-wide mb-1">Standard:</label>
+          <select id="importStdSelect" class="w-full border rounded px-2.5 py-1.5 text-xs bg-white text-gray-800 font-semibold" onchange="onImportStdOrMediumChange()">
+            <option value="9">Std 9</option>
+            <option value="10">Std 10</option>
+            <option value="11">Std 11</option>
+            <option value="12" selected>Std 12</option>
+          </select>
+        </div>
+        <div>
+          <label for="importMedium" class="block text-xs font-bold text-blue-950 uppercase tracking-wide mb-1">Medium:</label>
+          <select id="importMedium" class="w-full border rounded px-2.5 py-1.5 text-xs bg-white text-gray-800 font-semibold" onchange="onImportStdOrMediumChange()">
+            <option value="English" selected>English</option>
+            <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+            <option value="Bilingual">Bilingual</option>
+          </select>
+        </div>
+        <div>
+          <label for="importSubject" class="block text-xs font-bold text-blue-950 uppercase tracking-wide mb-1">Subject:</label>
+          <select id="importSubject" class="w-full border rounded px-2.5 py-1.5 text-xs bg-white text-gray-800 font-semibold" onchange="updateImportChapterDropdown()"></select>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Target Destination & Chapter Mapping</span>
+          <label class="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+            <input type="checkbox" id="importOverrideCheck" onchange="toggleImportOverrides()" class="rounded text-blue-900 h-3.5 w-3.5" checked />
+            <span>Enforce selections for all imported rows</span>
+          </label>
+        </div>
+        <div id="importOverrideFields" class="grid grid-cols-3 gap-2">
+          <div>
+            <label for="importDestination" class="block text-[11px] font-semibold text-gray-600 mb-1">Destination:</label>
+            <select id="importDestination" class="w-full border rounded px-2 py-1.5 text-xs bg-white">
+              <option value="General">General Bank</option>
+              <option value="Board Exam">Board Exam</option>
+              <option value="GUJCET">GUJCET (MCQs)</option>
+            </select>
+          </div>
+          <div>
+            <label for="importChapterNumSelect" class="block text-[11px] font-semibold text-gray-600 mb-1">Chapter No:</label>
+            <select id="importChapterNumSelect" class="w-full border rounded px-2 py-1.5 text-xs bg-white" onchange="handleImportChapterNumChange()"></select>
+          </div>
+          <div>
+            <label for="importChapterNameInput" class="block text-[11px] font-semibold text-gray-600 mb-1">Chapter Name:</label>
+            <input type="text" id="importChapterNameInput" placeholder="e.g. Relations and Functions" class="w-full border rounded px-2 py-1.5 text-xs bg-white" />
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS INCLUDING GOOGLE SHEETS -->
+      <div class="flex border-b border-gray-200 text-xs md:text-sm font-medium">
+        <button type="button" id="tabBtnPdf" onclick="switchImportTab('pdf')" class="px-3.5 py-2 border-b-2 border-blue-900 text-blue-900 font-semibold focus:outline-none">PDF / Scanned Images</button>
+        <button type="button" id="tabBtnCsv" onclick="switchImportTab('csv')" class="px-3.5 py-2 text-gray-500 hover:text-gray-700 focus:outline-none">CSV / Excel</button>
+        <button type="button" id="tabBtnGSheet" onclick="switchImportTab('gsheet')" class="px-3.5 py-2 text-emerald-700 font-bold hover:text-emerald-800 flex items-center gap-1 focus:outline-none">
+          <i data-lucide="sheet" class="w-3.5 h-3.5 text-emerald-600"></i> Google Sheet
+        </button>
+      </div>
+
+      <div id="importTabPdf" class="space-y-3">
+        <input type="file" id="pdfFileInput" accept=".pdf,image/png,image/jpeg,image/jpg" class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" onchange="handlePdfFileSelect(event)" />
+        <textarea id="pdfTextInput" rows="5" class="w-full border rounded-md p-2 text-xs font-mono cambria-math-text" placeholder="Paste questions directly..."></textarea>
+      </div>
+
+      <div id="importTabCsv" class="hidden space-y-3">
+        <label for="csvFileInput" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 hover:bg-blue-50/20 transition-all cursor-pointer block select-none">
+          <i data-lucide="file-spreadsheet" class="w-8 h-8 text-blue-600 mx-auto mb-2 pointer-events-none"></i>
+          <span class="text-sm font-semibold text-gray-800 block pointer-events-none">Click to Browse CSV / Excel File</span>
+          <span class="text-[11px] text-gray-400 block mt-0.5 pointer-events-none">Supports .csv, .xlsx, and .xls formats</span>
+          <span id="csvFileLabel" class="inline-block mt-2 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded border border-emerald-200 pointer-events-none">No file chosen</span>
+        </label>
+        <input type="file" id="csvFileInput" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" class="hidden" onchange="handleCsvFileSelect(event)" />
+      </div>
+
+      <!-- GOOGLE SHEETS IMPORT TAB -->
+      <div id="importTabGSheet" class="hidden space-y-3 bg-emerald-50/60 p-4 rounded-xl border border-emerald-200">
+        <div class="space-y-1.5">
+          <label class="block text-xs font-bold text-emerald-950 uppercase tracking-wide">Google Sheet Link / URL:</label>
+          <input type="url" id="qGoogleSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit" class="w-full border border-emerald-300 rounded-lg px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none" />
+        </div>
+        <p class="text-[11px] text-emerald-800 leading-tight">
+          Columns recognized: <strong>Question, Answer, Marks, Type</strong>. Ensure sheet sharing is set to <strong>"Anyone with link can view"</strong>.
+        </p>
+      </div>
+
+      <div id="importStatus" class="hidden text-xs p-2.5 rounded"></div>
+
+      <div class="flex gap-2 justify-end pt-3 border-t">
+        <button type="button" onclick="closeImportModal()" class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100">Cancel</button>
+        <button type="button" onclick="processSelectedImport()" id="btnExecuteImport" class="px-4 py-2 text-sm bg-blue-900 text-white font-medium rounded-md hover:bg-blue-800 flex items-center gap-1.5">
+          <i data-lucide="check" class="w-4 h-4"></i> Import Questions
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD-YOUR-API-KEY",
+      authDomain: "your-project-id.firebaseapp.com",
+      projectId: "your-project-id",
+      storageBucket: "your-project-id.appspot.com",
+      messagingSenderId: "123456789012",
+      appId: "1:123456789012:web:abcdef123456"
+    };
+
+    let firestoreDB = null;
+    let isCloudConfigured = false;
+
+    try {
+      if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "AIzaSyD-YOUR-API-KEY") {
+        firebase.initializeApp(firebaseConfig);
+        firestoreDB = firebase.firestore();
+        firestoreDB.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+        isCloudConfigured = true;
+      }
+    } catch (err) {
+      console.warn('Firebase configuration notice:', err);
+    }
+
+    // =========================================================================
+    // === COMPLETE GSEB CURRICULUM WITH SEPARATE EN / GU MEDIUM NAMES =========
+    // =========================================================================
+    const GSEB_SUBJECTS_MAP = {
+      secondary: [ // Std 9 & Std 10
+        { id: "Mathematics", nameEn: "Mathematics", nameGu: "ગણિત" },
+        { id: "Mathematics (Basic)", nameEn: "Mathematics (Basic)", nameGu: "ગણિત (બેઝિક)" },
+        { id: "Mathematics (Standard)", nameEn: "Mathematics (Standard)", nameGu: "ગણિત (સ્ટાન્ડર્ડ)" },
+        { id: "Science", nameEn: "Science & Technology", nameGu: "વિજ્ઞાન અને ટેકનોલોજી" },
+        { id: "Social Science", nameEn: "Social Science", nameGu: "સામાજિક વિજ્ઞાન" },
+        { id: "Gujarati (FL)", nameEn: "Gujarati (FL)", nameGu: "ગુજરાતી (પ્રથમ ભાષા)" },
+        { id: "Gujarati (SL)", nameEn: "Gujarati (SL)", nameGu: "ગુજરાતી (દ્વિતીય ભાષા)" },
+        { id: "English (FL)", nameEn: "English (FL)", nameGu: "અંગ્રેજી (પ્રથમ ભાષા)" },
+        { id: "English (SL)", nameEn: "English (SL)", nameGu: "અંગ્રેજી (દ્વિતીય ભાષા)" },
+        { id: "Hindi", nameEn: "Hindi", nameGu: "હિન્દી" },
+        { id: "Sanskrit", nameEn: "Sanskrit", nameGu: "સંસ્કૃત" },
+        { id: "Computer Studies", nameEn: "Computer Studies", nameGu: "કમ્પ્યુટર અધ્યયન" }
+      ],
+      higher_secondary_science: [ // Std 11 & 12 Science
+        { id: "Physics", nameEn: "Physics", nameGu: "ભૌતિક વિજ્ઞાન" },
+        { id: "Chemistry", nameEn: "Chemistry", nameGu: "રસાયણ વિજ્ઞાન" },
+        { id: "Biology", nameEn: "Biology", nameGu: "જીવ વિજ્ઞાન" },
+        { id: "Mathematics", nameEn: "Mathematics", nameGu: "ગણિત" },
+        { id: "English (FL)", nameEn: "English (FL)", nameGu: "અંગ્રેજી (પ્રથમ ભાષા)" },
+        { id: "English (SL)", nameEn: "English (SL)", nameGu: "અંગ્રેજી (દ્વિતીય ભાષા)" },
+        { id: "Gujarati (FL)", nameEn: "Gujarati (FL)", nameGu: "ગુજરાતી (પ્રથમ ભાષા)" },
+        { id: "Gujarati (SL)", nameEn: "Gujarati (SL)", nameGu: "ગુજરાતી (દ્વિતીય ભાષા)" },
+        { id: "Computer Studies", nameEn: "Computer Studies", nameGu: "કમ્પ્યુટર" }
+      ],
+      higher_secondary_general: [ // Std 11 & 12 Commerce & Arts
+        { id: "Elements of Accounts", nameEn: "Elements of Accounts", nameGu: "નામાનાં મૂળતત્ત્વો" },
+        { id: "Statistics", nameEn: "Statistics", nameGu: "આંકડાશાસ્ત્ર" },
+        { id: "Organization of Commerce", nameEn: "Organization of Commerce & Management", nameGu: "વાણિજ્ય વ્યવસ્થા અને સંચાલન" },
+        { id: "Economics", nameEn: "Economics", nameGu: "અર્થશાસ્ત્ર" },
+        { id: "SPCC", nameEn: "S.P. & C.C.", nameGu: "વાણિજ્યિક પત્રવ્યવહાર અને સેક્રેટરીયલ પ્રેક્ટિસ" },
+        { id: "Psychology", nameEn: "Psychology", nameGu: "મનોવિજ્ઞાન" },
+        { id: "Sociology", nameEn: "Sociology", nameGu: "સમાજશાસ્ત્ર" },
+        { id: "Philosophy", nameEn: "Philosophy", nameGu: "તત્વજ્ઞાન" },
+        { id: "Geography", nameEn: "Geography", nameGu: "ભૂગોળ" },
+        { id: "History", nameEn: "History", nameGu: "ઇતિહાસ" },
+        { id: "Political Science", nameEn: "Political Science", nameGu: "રાજ્યશાસ્ત્ર" },
+        { id: "English (FL)", nameEn: "English (FL)", nameGu: "અંગ્રેજી (પ્રથમ ભાષા)" },
+        { id: "English (SL)", nameEn: "English (SL)", nameGu: "અંગ્રેજી (દ્વિતીય ભાષા)" },
+        { id: "Gujarati (FL)", nameEn: "Gujarati (FL)", nameGu: "ગુજરાતી (પ્રથમ ભાષા)" },
+        { id: "Gujarati (SL)", nameEn: "Gujarati (SL)", nameGu: "ગુજરાતી (દ્વિતીય ભાષા)" },
+        { id: "Hindi", nameEn: "Hindi", nameGu: "હિન્દી" },
+        { id: "Sanskrit", nameEn: "Sanskrit", nameGu: "સંસ્કૃત" },
+        { id: "Computer Studies", nameEn: "Computer Studies", nameGu: "કમ્પ્યુટર" }
+      ]
+    };
+
+    function getSubjectDisplayName(subjectObj, medium) {
+      if (!subjectObj) return '';
+      if (medium === 'Gujarati') {
+        return subjectObj.nameGu;
+      }
+      if (medium === 'English') {
+        return subjectObj.nameEn;
+      }
+      // Bilingual or unspecified
+      return `${subjectObj.nameEn} (${subjectObj.nameGu})`;
+    }
+
+    function getGsebSubjectsForStd(stdNumber) {
+      const num = parseInt(stdNumber, 10);
+      if (num === 9 || num === 10) {
+        return GSEB_SUBJECTS_MAP.secondary;
+      }
+      const combined = [...GSEB_SUBJECTS_MAP.higher_secondary_science];
+      GSEB_SUBJECTS_MAP.higher_secondary_general.forEach(item => {
+        if (!combined.some(c => c.id === item.id)) {
+          combined.push(item);
+        }
+      });
+      return combined;
+    }
+
+    function getAllGsebSubjectsUnique() {
+      const all = [
+        ...GSEB_SUBJECTS_MAP.secondary,
+        ...GSEB_SUBJECTS_MAP.higher_secondary_science,
+        ...GSEB_SUBJECTS_MAP.higher_secondary_general
+      ];
+      const unique = [];
+      const seen = new Set();
+      all.forEach(sub => {
+        if (!seen.has(sub.id)) {
+          seen.add(sub.id);
+          unique.push(sub);
+        }
+      });
+      return unique;
+    }
+
+    function populateSelectWithMedium(selectEl, list, medium, selectedVal = '') {
+      if (!selectEl) return;
+      selectEl.innerHTML = list.map(item => `
+        <option value="${item.id}" ${item.id === selectedVal ? 'selected' : ''}>${getSubjectDisplayName(item, medium)}</option>
+      `).join('');
+    }
+
+    function getSubjectResolvedName(subjectId, medium) {
+      const all = getAllGsebSubjectsUnique();
+      const found = all.find(s => s.id === subjectId);
+      if (found) {
+        return getSubjectDisplayName(found, medium);
+      }
+      return subjectId;
+    }
+
+    function syncSubjectDropdowns() {
+      onFilterMediumChange();
+      onBlueprintStdOrMediumChange();
+      onModalStdOrMediumChange();
+      onChapterModalStdOrMediumChange();
+      onImportStdOrMediumChange();
+    }
+
+    function onFilterMediumChange() {
+      const medium = document.getElementById('filterLang')?.value || 'Bilingual';
+      const stdVal = document.getElementById('filterStd')?.value;
+      const filterSub = document.getElementById('filterSubject');
+      if (filterSub) {
+        const curVal = filterSub.value;
+        const subjects = stdVal ? getGsebSubjectsForStd(stdVal) : getAllGsebSubjectsUnique();
+        filterSub.innerHTML = '<option value="">All GSEB Subjects</option>' + subjects.map(s => `
+          <option value="${s.id}" ${s.id === curVal ? 'selected' : ''}>${getSubjectDisplayName(s, medium)}</option>
+        `).join('');
+      }
+      populateQuestionFilterChapters();
+      applyQuestionFilter();
+    }
+
+    function onFilterStdOrSubjectChange(isStdChange) {
+      if (isStdChange) {
+        onFilterMediumChange();
+      } else {
+        populateQuestionFilterChapters();
+        applyQuestionFilter();
+      }
+    }
+
+    function onBlueprintStdOrMediumChange() {
+      const stdVal = document.getElementById('bpStd')?.value || '12';
+      const medium = document.getElementById('bpMedium')?.value || 'English';
+      const select = document.getElementById('bpSubject');
+      if (select) {
+        const prev = select.value;
+        const list = getGsebSubjectsForStd(stdVal);
+        populateSelectWithMedium(select, list, medium, prev || list[0].id);
+      }
+      refreshAllocationOptions();
+    }
+
+    function onModalStdOrMediumChange() {
+      const stdVal = document.getElementById('qStd')?.value || '12';
+      const medium = document.getElementById('qMedium')?.value || 'English';
+      const select = document.getElementById('qSubject');
+      if (select) {
+        const prev = select.value;
+        const list = getGsebSubjectsForStd(stdVal);
+        populateSelectWithMedium(select, list, medium, prev || list[0].id);
+        updateQuestionModalChapters();
+      }
+    }
+
+    function onChapterModalStdOrMediumChange() {
+      const rawStd = document.getElementById('chStd')?.value || 'Std 12';
+      const stdVal = rawStd.replace('Std ', '');
+      const medium = document.getElementById('chMedium')?.value || 'English';
+      const select = document.getElementById('chSubject');
+      if (select) {
+        const prev = select.value;
+        const list = getGsebSubjectsForStd(stdVal);
+        populateSelectWithMedium(select, list, medium, prev || list[0].id);
+      }
+    }
+
+    function onImportStdOrMediumChange() {
+      const stdVal = document.getElementById('importStdSelect')?.value || '12';
+      const medium = document.getElementById('importMedium')?.value || 'English';
+      const select = document.getElementById('importSubject');
+      if (select) {
+        const prev = select.value;
+        const list = getGsebSubjectsForStd(stdVal);
+        populateSelectWithMedium(select, list, medium, prev || list[0].id);
+        updateImportChapterDropdown();
+      }
+    }
+
+    function toggleMobileSidebar(open) {
+      const sidebar = document.getElementById('mainSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (!sidebar) return;
+
+      if (open) {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        if (backdrop) backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+        if (backdrop) backdrop.classList.add('hidden');
+      }
+    }
+
+    const SIDEBAR_LOGO_STORAGE_KEY = 'papergen_sidebar_custom_logo';
+    const SIDEBAR_NAME_STORAGE_KEY = 'papergen_sidebar_custom_name';
+
+    function loadSavedSidebarIdentity() {
+      const savedLogo = localStorage.getItem(SIDEBAR_LOGO_STORAGE_KEY);
+      const imgEl = document.getElementById('sidebarCustomLogo');
+      const placeholderEl = document.getElementById('sidebarLogoPlaceholder');
+
+      if (savedLogo && imgEl && placeholderEl) {
+        imgEl.src = savedLogo;
+        imgEl.classList.remove('hidden');
+        placeholderEl.classList.add('hidden');
+      }
+
+      const savedName = localStorage.getItem(SIDEBAR_NAME_STORAGE_KEY);
+      const nameEl = document.getElementById('sidebarCustomName');
+      if (savedName && nameEl) {
+        nameEl.textContent = savedName;
+      }
+    }
+
+    function triggerCustomLogoUpload(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const fileInput = document.getElementById('sidebarLogoInput');
+      if (fileInput) fileInput.click();
+    }
+
+    function promptEditCustomName(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const nameEl = document.getElementById('sidebarCustomName');
+      const currentName = nameEl ? nameEl.textContent : 'Prof. R. Patel';
+      const newName = prompt('Enter your name to display on the panel:', currentName);
+      if (newName && newName.trim()) {
+        const trimmed = newName.trim();
+        if (nameEl) nameEl.textContent = trimmed;
+        localStorage.setItem(SIDEBAR_NAME_STORAGE_KEY, trimmed);
+      }
+    }
+
+    function handleSidebarLogoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        try {
+          localStorage.setItem(SIDEBAR_LOGO_STORAGE_KEY, base64Data);
+        } catch (err) {}
+        const imgEl = document.getElementById('sidebarCustomLogo');
+        const placeholderEl = document.getElementById('sidebarLogoPlaceholder');
+
+        if (imgEl && placeholderEl) {
+          imgEl.src = base64Data;
+          imgEl.classList.remove('hidden');
+          placeholderEl.classList.add('hidden');
+        }
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
+    }
+
+    const AUTH_USERS_KEY = 'papergen_users_registry';
+    const AUTH_SESSION_KEY = 'papergen_active_session';
+
+    async function hashPassword(plainText) {
+      const msgUint8 = new TextEncoder().encode(plainText);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function ensureAdminUserExists() {
+      let users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '[]');
+      if (users.length === 0) {
+        const defaultHash = await hashPassword('Admin@123');
+        users.push({
+          email: 'admin@school.com',
+          name: 'Administrator',
+          passwordHash: defaultHash,
+          secQuestion: 'subject',
+          secAnswer: 'mathematics'
+        });
+        localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+      }
+    }
+
+    function checkActiveSession() {
+      const session = JSON.parse(localStorage.getItem(AUTH_SESSION_KEY) || 'null');
+      const overlay = document.getElementById('authOverlay');
+      const userLabel = document.getElementById('currentUserLabel');
+
+      if (session && session.email) {
+        overlay.classList.add('hidden');
+        if (userLabel) userLabel.textContent = session.name || session.email;
+      } else {
+        overlay.classList.remove('hidden');
+        showAuthView('login');
+      }
+    }
+
+    function showAuthAlert(msg, isSuccess = false) {
+      const el = document.getElementById('authAlert');
+      el.className = `text-xs p-3 rounded-lg mb-4 text-center font-medium ${isSuccess ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function clearAuthAlert() {
+      document.getElementById('authAlert').classList.add('hidden');
+    }
+
+    function showAuthView(view) {
+      clearAuthAlert();
+      const loginF = document.getElementById('formLogin');
+      const signupF = document.getElementById('formSignup');
+      const forgotF = document.getElementById('formForgot');
+      const title = document.getElementById('authBoxTitle');
+      const subtitle = document.getElementById('authBoxSubtitle');
+
+      loginF.classList.add('hidden');
+      signupF.classList.add('hidden');
+      forgotF.classList.add('hidden');
+
+      if (view === 'signup') {
+        signupF.classList.remove('hidden');
+        title.textContent = 'Create Educator Account';
+        subtitle.textContent = 'Register locally to create and safeguard your exams.';
+      } else if (view === 'forgot') {
+        forgotF.classList.remove('hidden');
+        title.textContent = 'Reset Password';
+        subtitle.textContent = 'Verify your security question to set a new password.';
+      } else {
+        loginF.classList.remove('hidden');
+        title.textContent = 'Sign In';
+        subtitle.textContent = 'Enter your credentials to access the Question Paper Generator.';
+      }
+    }
+
+    async function executeLogin(e) {
+      e.preventDefault();
+      clearAuthAlert();
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const password = document.getElementById('loginPassword').value;
+
+      const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '[]');
+      const user = users.find(u => u.email === email);
+      const inputHash = await hashPassword(password);
+
+      if (user && user.passwordHash === inputHash) {
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ email: user.email, name: user.name }));
+        document.getElementById('formLogin').reset();
+        checkActiveSession();
+      } else {
+        showAuthAlert('Invalid email address or password.');
+      }
+    }
+
+    async function executeSignup(e) {
+      e.preventDefault();
+      clearAuthAlert();
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim().toLowerCase();
+      const password = document.getElementById('regPassword').value;
+      const secQuestion = document.getElementById('regSecQuestion').value;
+      const secAnswer = document.getElementById('regSecAnswer').value.trim().toLowerCase();
+
+      const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '[]');
+      if (users.some(u => u.email === email)) {
+        showAuthAlert('An account with this email address already exists.');
+        return;
+      }
+
+      const passwordHash = await hashPassword(password);
+      users.push({ name, email, passwordHash, secQuestion, secAnswer });
+      localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+
+      document.getElementById('formSignup').reset();
+      showAuthView('login');
+      showAuthAlert('Account created successfully! Please sign in.', true);
+    }
+
+    async function executeResetPassword(e) {
+      e.preventDefault();
+      clearAuthAlert();
+      const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
+      const secQuestion = document.getElementById('forgotSecQuestion').value;
+      const secAnswer = document.getElementById('forgotSecAnswer').value.trim().toLowerCase();
+      const newPassword = document.getElementById('forgotNewPassword').value;
+
+      const users = JSON.parse(localStorage.getItem(AUTH_USERS_KEY) || '[]');
+      const userIdx = users.findIndex(u => u.email === email);
+
+      if (userIdx === -1) {
+        showAuthAlert('No registered account found with this email.');
+        return;
+      }
+
+      const user = users[userIdx];
+      if (user.secQuestion === secQuestion && user.secAnswer.toLowerCase() === secAnswer) {
+        users[userIdx].passwordHash = await hashPassword(newPassword);
+        localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+        document.getElementById('formForgot').reset();
+        showAuthView('login');
+        showAuthAlert('Password reset successfully! Please sign in with your new password.', true);
+      } else {
+        showAuthAlert('Security question answer does not match our records.');
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Are you sure you want to log out?')) {
+        localStorage.removeItem(AUTH_SESSION_KEY);
+        checkActiveSession();
+      }
+    }
+
+    const DB_NAME = 'QuestionPaperGeneratorDB_v7';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'app_data_store';
+    let dbInstance = null;
+
+    let questions = [];
+    let chapters = [];
+    let savedPapers = [];
+    let savedBlueprints = [];
+    let currentlyLoadedPaper = null;
+
+    const defaultQuestions = [
+      { id: 'q1', subject: 'Mathematics', medium: 'Bilingual', category: 'General', std: 12, chapter: 'Chapter 1: Relations and Functions', marks: 1, type: 'MCQ', textEn: 'Let R be the relation in the set N given by R = {(a, b): a = b - 2, b > 6}. Choose the correct answer. (A) (2, 4) ∈ R (B) (3, 8) ∈ R (C) (6, 8) ∈ R (D) (8, 7) ∈ R', textGu: 'જો ગણ N પર સંબંધ R = {(a, b): a = b - 2, b > 6} હોય, તો સાચો વિકલ્પ પસંદ કરો. (A) (2, 4) ∈ R (B) (3, 8) ∈ R (C) (6, 8) ∈ R (D) (8, 7) ∈ R', answer: '(C) (6, 8) ∈ R', usage: 1 }
+    ];
+
+    const defaultChapters = [
+      { subject: 'Mathematics', medium: 'English', std: 'Std 12', num: 1, title: 'Relations and Functions' },
+      { subject: 'Mathematics', medium: 'Gujarati', std: 'Std 12', num: 1, title: 'સંબંધ અને વિધેય' },
+      { subject: 'Science', medium: 'Gujarati', std: 'Std 10', num: 1, title: 'રાસાયણિક પ્રક્રિયાઓ અને સમીકરણો' },
+      { subject: 'Elements of Accounts', medium: 'Gujarati', std: 'Std 12', num: 1, title: 'ભાગીદારી વિષય પ્રવેશ' }
+    ];
+
+    function formatToDDMMYYYY(dateInput) {
+      if (!dateInput) return '';
+      const parts = dateInput.split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      const d = new Date(dateInput);
+      if (!isNaN(d.getTime())) {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      }
+      return dateInput;
+    }
+
+    function parseMcqPromptAndOptions(rawText) {
+      if (!rawText) return { prompt: '', options: null };
+      const pattern = /(?:^|\s)(?:\([A-Da-d]\)|\[[A-Da-d]\]|[A-Da-d][\.\)])\s*/g;
+      const matches = [...rawText.matchAll(pattern)];
+
+      if (matches.length >= 2) {
+        const firstMatchIndex = matches[0].index;
+        const prompt = rawText.substring(0, firstMatchIndex).trim();
+        const options = [];
+
+        for (let i = 0; i < matches.length; i++) {
+          const start = matches[i].index;
+          const end = (i < matches.length - 1) ? matches[i + 1].index : rawText.length;
+          const fullOption = rawText.substring(start, end).trim();
+          const cleanLabelMatch = fullOption.match(/^(\([A-Da-d]\)|\[[A-Da-d]\]|[A-Da-d][\.\)])\s*(.*)$/s);
+
+          if (cleanLabelMatch) {
+            const letter = cleanLabelMatch[1].replace(/[\(\)\[\]\.\)]/g, '').toUpperCase();
+            options.push({ label: `(${letter})`, text: cleanLabelMatch[2].trim() });
+          } else {
+            options.push({ label: `(${String.fromCharCode(65 + i)})`, text: fullOption });
+          }
+        }
+        return { prompt, options };
+      }
+
+      return { prompt: rawText, options: null };
+    }
+
+    async function initializeDatabase() {
+      loadSavedSidebarIdentity();
+      await ensureAdminUserExists();
+      checkActiveSession();
+      await enforceAutoPersistence();
+
+      try {
+        const isInitialized = await dbGet('db_initialized');
+        let storedQuestions = await dbGet('saved_questions');
+        let storedChapters = await dbGet('saved_chapters');
+        let storedPapers = await dbGet('saved_papers');
+        let storedBlueprints = await dbGet('saved_blueprints');
+
+        if (!storedQuestions || storedQuestions.length === 0) {
+          try {
+            const ls = localStorage.getItem('saved_questions');
+            if (ls) storedQuestions = JSON.parse(ls);
+          } catch(e) {}
+        }
+
+        if (!isInitialized && (!storedQuestions || storedQuestions.length === 0)) {
+          questions = defaultQuestions.map(q => ({ ...q, medium: detectQuestionMedium(q) }));
+          chapters = [...defaultChapters];
+          await saveState(false);
+          await dbSet('db_initialized', true);
+        } else {
+          questions = Array.isArray(storedQuestions) ? storedQuestions : [];
+          chapters = Array.isArray(storedChapters) ? storedChapters : [];
+          savedPapers = Array.isArray(storedPapers) ? storedPapers : [];
+          savedBlueprints = Array.isArray(storedBlueprints) ? storedBlueprints : [];
+        }
+
+        updateDashboardCounters();
+      } catch (err) {
+        console.error('Local DB Load Error:', err);
+      }
+
+      syncSubjectDropdowns();
+      renderQuestions();
+      renderChapters();
+      renderAllPaperTables();
+      renderBlueprintsTable();
+      renderCategoryViews();
+      populateQuestionFilterChapters();
+      refreshAllocationOptions();
+
+      if (isCloudConfigured && firestoreDB) {
+        listenToCloudFirestore();
+        const badge = document.getElementById('sidebarCloudBadge');
+        if (badge) badge.textContent = 'Connected';
+      } else {
+        const badge = document.getElementById('sidebarCloudBadge');
+        if (badge) badge.textContent = 'Local Active';
+        const stText = document.getElementById('storageStatusText');
+        if (stText) stText.textContent = 'IndexedDB Local';
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function listenToCloudFirestore() {
+      if (!firestoreDB) return;
+      firestoreDB.collection("question_bank").doc("shared_repository")
+        .onSnapshot((doc) => {
+          if (doc.exists) {
+            const cloudData = doc.data();
+            if (Array.isArray(cloudData.questions) && cloudData.questions.length > 0) {
+              questions = cloudData.questions;
+              if (Array.isArray(cloudData.chapters)) chapters = cloudData.chapters;
+              if (Array.isArray(cloudData.savedPapers)) savedPapers = cloudData.savedPapers;
+              if (Array.isArray(cloudData.savedBlueprints)) savedBlueprints = cloudData.savedBlueprints;
+
+              dbSet('saved_questions', questions);
+              dbSet('saved_chapters', chapters);
+              dbSet('saved_papers', savedPapers);
+              dbSet('saved_blueprints', savedBlueprints);
+
+              renderQuestions();
+              renderChapters();
+              renderAllPaperTables();
+              renderBlueprintsTable();
+              updateDashboardCounters();
+              refreshAllocationOptions();
+            }
+          } else {
+            saveState(true);
+          }
+        }, (error) => {
+          console.warn('Firestore real-time sync status:', error.message);
+        });
+    }
+
+    async function enforceAutoPersistence() {
+      try {
+        if (navigator.storage && navigator.storage.persist) {
+          const isPersisted = await navigator.storage.persisted();
+          if (!isPersisted) {
+            await navigator.storage.persist();
+          }
+        }
+      } catch (e) {}
+    }
+
+    function openDB() {
+      if (dbInstance) return Promise.resolve(dbInstance);
+      return new Promise((resolve) => {
+        if (!window.indexedDB) { resolve(null); return; }
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+        };
+        req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    async function dbGet(key) {
+      try {
+        const db = await openDB();
+        if (db) {
+          return await new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result !== undefined ? req.result : null);
+            req.onerror = () => resolve(null);
+          });
+        }
+      } catch (err) {}
+      try {
+        const item = localStorage.getItem(key);
+        return item !== null ? JSON.parse(item) : null;
+      } catch { return null; }
+    }
+
+    async function dbSet(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+      try {
+        const db = await openDB();
+        if (db) {
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.put(value, key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+        }
+      } catch (err) {}
+    }
+
+    async function saveState(syncCloud = true) {
+      await Promise.all([
+        dbSet('saved_questions', questions),
+        dbSet('saved_chapters', chapters),
+        dbSet('saved_papers', savedPapers),
+        dbSet('saved_blueprints', savedBlueprints)
+      ]);
+      try {
+        localStorage.setItem('saved_questions', JSON.stringify(questions));
+      } catch(e) {}
+      updateDashboardCounters();
+
+      if (syncCloud && isCloudConfigured && firestoreDB) {
+        try {
+          await firestoreDB.collection("question_bank").doc("shared_repository").set({
+            questions: questions,
+            chapters: chapters,
+            savedPapers: savedPapers,
+            savedBlueprints: savedBlueprints,
+            lastSynced: new Date().toISOString()
+          }, { merge: true });
+        } catch(err) {
+          console.warn('Firestore sync queued or offline:', err);
+        }
+      }
+    }
+
+    async function manualSaveQuestions() {
+      const btn = document.getElementById('btnSaveQuestions');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving...`;
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        await saveState(true);
+        alert(`Success! All ${questions.length} questions saved permanently.`);
+      } catch (err) {
+        alert('Error saving questions: ' + err.message);
+      } finally {
+        btn.innerHTML = originalText;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function detectQuestionMedium(q) {
+      if (q.medium) return q.medium;
+      if (q.textEn && q.textGu) return 'Bilingual';
+      if (q.textGu && !q.textEn) return 'Gujarati';
+      return 'English';
+    }
+
+    function cleanType(typeStr) {
+      if (!typeStr) return 'Short Answer';
+      const clean = typeStr.toString().trim().toLowerCase();
+      if (clean.includes('mcq')) return 'MCQ';
+      if (clean.includes('long')) return 'Long Answer';
+      return 'Short Answer';
+    }
+
+    function cleanChapterName(name) {
+      return (name || 'General').toString().trim();
+    }
+
+    function updateDashboardCounters() {
+      const qCount = document.getElementById('statTotalQuestions');
+      const cCount = document.getElementById('statTotalChapters');
+      const bCount = document.getElementById('statTotalBlueprints');
+      if (qCount) qCount.textContent = questions.length;
+      if (cCount) cCount.textContent = chapters.length;
+      if (bCount) bCount.textContent = savedBlueprints.length;
+    }
+
+    function exportDataBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ questions, chapters, savedPapers, savedBlueprints }, null, 2));
+      const dlAnchorElem = document.createElement('a');
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute("download", `question_paper_backup_${new Date().toISOString().split('T')[0]}.json`);
+      dlAnchorElem.click();
+    }
+
+    function importDataBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported.questions)) questions = imported.questions;
+          if (Array.isArray(imported.chapters)) chapters = imported.chapters;
+          if (Array.isArray(imported.savedPapers)) savedPapers = imported.savedPapers;
+          if (Array.isArray(imported.savedBlueprints)) savedBlueprints = imported.savedBlueprints;
+          await saveState(true);
+          renderQuestions();
+          renderChapters();
+          renderBlueprintsTable();
+          refreshAllocationOptions();
+          alert('Database restored and synced permanently!');
+        } catch (err) {
+          alert('Failed to import backup file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function renderQuestions(data = questions) {
+      const tbody = document.getElementById('questions-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = data.map((q) => {
+        const originalIndex = questions.indexOf(q);
+        const marksOptions = [1, 2, 3, 4, 5, 6, 8, 10].map(m => 
+          `<option value="${m}" ${Number(q.marks) === m ? 'selected' : ''}>${m} M</option>`
+        ).join('');
+
+        const typeOptions = ['MCQ', 'Short Answer', 'Long Answer'].map(t =>
+          `<option value="${t}" ${cleanType(q.type) === t ? 'selected' : ''}>${t}</option>`
+        ).join('');
+
+        const currentMed = q.medium || detectQuestionMedium(q);
+        const mediumOptions = ['English', 'Gujarati', 'Bilingual'].map(med =>
+          `<option value="${med}" ${currentMed === med ? 'selected' : ''}>${med}</option>`
+        ).join('');
+
+        const categoryTag = q.category === 'GUJCET' 
+          ? `<span class="px-2 py-0.5 rounded text-[11px] bg-cyan-100 text-cyan-800 font-semibold whitespace-nowrap">GUJCET</span>`
+          : q.category === 'Board Exam'
+          ? `<span class="px-2 py-0.5 rounded text-[11px] bg-amber-100 text-amber-800 font-semibold whitespace-nowrap">Board Exam</span>`
+          : `<span class="px-2 py-0.5 rounded text-[11px] bg-gray-100 text-gray-700 whitespace-nowrap">General</span>`;
+
+        const displaySub = getSubjectResolvedName(q.subject, currentMed);
+
+        return `
+          <tr class="hover:bg-gray-50 border-b border-gray-100">
+            <td class="py-2.5 px-3 font-semibold text-gray-700">${q.std}</td>
+            <td class="py-2.5 px-3 text-xs font-semibold text-blue-800 whitespace-nowrap">${displaySub}</td>
+            <td class="py-2.5 px-3">${categoryTag}</td>
+            <td class="py-2.5 px-3 font-medium text-gray-800 whitespace-nowrap">${q.chapter}</td>
+            <td class="py-2.5 px-2.5">
+              <select onchange="updateQuestionMarks(${originalIndex}, this.value)" class="border border-gray-300 rounded px-2.5 py-1.5 text-xs bg-white font-medium text-gray-700 cursor-pointer">
+                ${marksOptions}
+              </select>
+            </td>
+            <td class="py-2.5 px-2.5">
+              <select onchange="updateQuestionType(${originalIndex}, this.value)" class="w-full min-w-[124px] border border-gray-300 rounded-md px-2.5 py-1.5 text-xs bg-white font-medium text-gray-800 shadow-sm cursor-pointer">
+                ${typeOptions}
+              </select>
+            </td>
+            <td class="py-2.5 px-2.5">
+              <select onchange="updateQuestionMedium(${originalIndex}, this.value)" class="w-full min-w-[104px] border border-gray-300 rounded-md px-2.5 py-1.5 text-xs bg-white font-medium text-gray-800 shadow-sm cursor-pointer">
+                ${mediumOptions}
+              </select>
+            </td>
+            <td class="py-2.5 px-4 min-w-[280px]">
+              ${q.textEn ? `<div class="font-medium text-gray-800 cambria-math-text">${q.textEn}</div>` : ''}
+              ${q.textGu ? `<div class="text-xs text-gray-600 ${q.textEn ? 'mt-1' : 'font-medium text-gray-800'}">${q.textGu}</div>` : ''}
+            </td>
+            <td class="py-2.5 px-3 min-w-[180px]">
+              <div class="text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block max-w-xs break-words cambria-math-text">
+                ${q.answer ? q.answer : '<span class="text-gray-400 italic">No answer</span>'}
+              </div>
+            </td>
+            <td class="py-2.5 px-2 text-center text-xs font-semibold">${q.usage || 0}</td>
+            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+              <button type="button" onclick="removeQuestion(${originalIndex})" class="px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors">
+                Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('') || `<tr><td colspan="11" class="text-center py-6 text-gray-400 italic">No questions stored in database.</td></tr>`;
+
+      updateDashboardCounters();
+      renderCategoryViews();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function updateQuestionType(index, newType) {
+      if (questions[index]) {
+        questions[index].type = cleanType(newType);
+        await saveState(true);
+        refreshAllocationOptions();
+      }
+    }
+
+    async function updateQuestionMedium(index, newMedium) {
+      if (questions[index]) {
+        questions[index].medium = newMedium;
+        await saveState(true);
+        renderQuestions();
+        refreshAllocationOptions();
+      }
+    }
+
+    async function updateQuestionMarks(index, newMarks) {
+      if (questions[index]) {
+        questions[index].marks = parseInt(newMarks, 10);
+        await saveState(true);
+        refreshAllocationOptions();
+      }
+    }
+
+    async function removeQuestion(index) {
+      if (confirm('Delete this question permanently?')) {
+        questions.splice(index, 1);
+        await saveState(true);
+        renderQuestions();
+        populateQuestionFilterChapters();
+        refreshAllocationOptions();
+      }
+    }
+
+    function renderCategoryViews() {
+      const boardTbody = document.getElementById('boardQuestionsTbody');
+      const gujcetTbody = document.getElementById('gujcetQuestionsTbody');
+
+      if (boardTbody) {
+        boardTbody.innerHTML = questions.filter(q => q.category === 'Board Exam').map(q => `
+          <tr class="hover:bg-gray-50 border-b border-gray-100">
+            <td class="py-2.5 px-4 font-semibold">${q.std}</td>
+            <td class="py-2.5 px-4 text-xs font-semibold text-blue-800">${getSubjectResolvedName(q.subject, q.medium)}</td>
+            <td class="py-2.5 px-4">${q.chapter}</td>
+            <td class="py-2.5 px-4 font-bold">${q.marks}M</td>
+            <td class="py-2.5 px-4 text-xs text-gray-500">${q.type}</td>
+            <td class="py-2.5 px-6 cambria-math-text">${q.textEn || q.textGu}</td>
+            <td class="py-2.5 px-4 text-emerald-700 text-xs cambria-math-text">${q.answer || '-'}</td>
+          </tr>
+        `).join('') || `<tr><td colspan="7" class="py-4 text-center text-gray-400 italic">No board questions stored.</td></tr>`;
+      }
+
+      if (gujcetTbody) {
+        gujcetTbody.innerHTML = questions.filter(q => q.category === 'GUJCET').map(q => `
+          <tr class="hover:bg-gray-50 border-b border-gray-100">
+            <td class="py-2.5 px-4 font-semibold">${q.std}</td>
+            <td class="py-2.5 px-4 text-xs font-semibold text-cyan-800">${getSubjectResolvedName(q.subject, q.medium)}</td>
+            <td class="py-2.5 px-4">${q.chapter}</td>
+            <td class="py-2.5 px-4 font-bold">${q.marks}M</td>
+            <td class="py-2.5 px-6 cambria-math-text">${q.textEn || q.textGu}</td>
+            <td class="py-2.5 px-4 text-emerald-700 text-xs cambria-math-text">${q.answer || '-'}</td>
+          </tr>
+        `).join('') || `<tr><td colspan="6" class="py-4 text-center text-gray-400 italic">No GUJCET questions stored.</td></tr>`;
+      }
+    }
+
+    function populateQuestionFilterChapters() {
+      const chapterSelect = document.getElementById('filterChapter');
+      if (!chapterSelect) return;
+      const set = new Set();
+      const stdVal = document.getElementById('filterStd')?.value;
+      const subjVal = document.getElementById('filterSubject')?.value;
+
+      chapters.forEach(c => {
+        const matchesStd = !stdVal || c.std === ('Std ' + stdVal) || c.std === stdVal;
+        const matchesSubj = !subjVal || (c.subject || 'Mathematics') === subjVal;
+        if (matchesStd && matchesSubj) {
+          set.add(`Chapter ${c.num}: ${c.title}`);
+        }
+      });
+      questions.forEach(q => {
+        const matchesStd = !stdVal || String(q.std) === stdVal;
+        const matchesSubj = !subjVal || (q.subject || 'Mathematics') === subjVal;
+        if (matchesStd && matchesSubj && q.chapter) {
+          set.add(q.chapter);
+        }
+      });
+      chapterSelect.innerHTML = '<option value="">All Chapters</option>' + Array.from(set).map(ch => `<option value="${ch}">${ch}</option>`).join('');
+    }
+
+    function applyQuestionFilter() {
+      const textQuery = document.getElementById('filterText').value.toLowerCase().trim();
+      const subjectQuery = document.getElementById('filterSubject').value;
+      const catQuery = document.getElementById('filterCategory').value;
+      const stdQuery = document.getElementById('filterStd').value;
+      const chapterQuery = document.getElementById('filterChapter') ? document.getElementById('filterChapter').value.toLowerCase().trim() : '';
+      const typeQuery = document.getElementById('filterType').value;
+      const langQuery = document.getElementById('filterLang') ? document.getElementById('filterLang').value : '';
+
+      const filtered = questions.filter(q => {
+        const matchesText = !textQuery || (q.textEn && q.textEn.toLowerCase().includes(textQuery)) || (q.textGu && q.textGu.toLowerCase().includes(textQuery));
+        const matchesSubject = !subjectQuery || (q.subject || 'Mathematics') === subjectQuery;
+        const matchesCat = !catQuery || (q.category || 'General') === catQuery;
+        const matchesStd = !stdQuery || String(q.std) === stdQuery;
+        const matchesChapter = !chapterQuery || q.chapter.toLowerCase().trim() === chapterQuery;
+        const matchesType = !typeQuery || q.type === typeQuery;
+        const currentMed = q.medium || detectQuestionMedium(q);
+        const matchesLang = !langQuery || (currentMed === langQuery);
+        return matchesText && matchesSubject && matchesCat && matchesStd && matchesChapter && matchesType && matchesLang;
+      });
+
+      renderQuestions(filtered);
+    }
+
+    function updateQuestionModalChapters() {
+      const selectedStd = 'Std ' + document.getElementById('qStd').value;
+      const selectedSubj = document.getElementById('qSubject').value;
+      const select = document.getElementById('qChapterSelect');
+      if (!select) return;
+      const availableChapters = chapters.filter(c => (c.std === selectedStd || c.std === document.getElementById('qStd').value) && (c.subject || 'Mathematics') === selectedSubj);
+      select.innerHTML = availableChapters.map(c => `<option value="Chapter ${c.num}: ${c.title}">Chapter ${c.num}: ${c.title}</option>`).join('') || '<option value="Chapter 1: General">Chapter 1: General</option>';
+    }
+
+    const questionModal = document.getElementById('addQuestionModal');
+    document.getElementById('btnOpenAddQuestion')?.addEventListener('click', () => {
+      onModalStdOrMediumChange();
+      questionModal.showModal();
+    });
+    document.getElementById('btnCloseQuestionModal')?.addEventListener('click', () => questionModal.close());
+    
+    document.getElementById('addQuestionForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      questions.unshift({
+        id: 'q_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        subject: document.getElementById('qSubject').value,
+        category: document.getElementById('qCategory').value,
+        std: parseInt(document.getElementById('qStd').value, 10),
+        chapter: cleanChapterName(document.getElementById('qChapterSelect').value),
+        type: cleanType(document.getElementById('qType').value),
+        medium: document.getElementById('qMedium').value,
+        marks: parseInt(document.getElementById('qMarks').value, 10),
+        textEn: document.getElementById('qTextEn').value.trim(),
+        textGu: document.getElementById('qTextGu').value.trim(),
+        answer: document.getElementById('qAnswer').value.trim(),
+        usage: 0
+      });
+      await saveState(true);
+      renderQuestions();
+      populateQuestionFilterChapters();
+      refreshAllocationOptions();
+      e.target.reset();
+      questionModal.close();
+    });
+
+    const chapterModal = document.getElementById('addChapterModal');
+    document.getElementById('btnOpenAddChapter')?.addEventListener('click', () => {
+      if (chapterModal) {
+        document.getElementById('addChapterForm')?.reset();
+        onChapterModalStdOrMediumChange();
+        document.getElementById('chNum').value = (chapters.length + 1);
+        chapterModal.showModal();
+      }
+    });
+
+    async function handleChapterFormSubmit(e) {
+      e.preventDefault();
+      const subject = document.getElementById('chSubject').value;
+      const std = document.getElementById('chStd').value;
+      const medium = document.getElementById('chMedium').value;
+      const num = parseInt(document.getElementById('chNum').value, 10);
+      const title = document.getElementById('chTitle').value.trim();
+
+      if (!title) return;
+
+      const existingIdx = chapters.findIndex(c => c.subject === subject && c.std === std && c.num === num);
+      if (existingIdx !== -1) {
+        if (!confirm(`Chapter ${num} already exists for ${subject} (${std}). Overwrite?`)) return;
+        chapters[existingIdx] = { subject, medium, std, num, title };
+      } else {
+        chapters.push({ subject, medium, std, num, title });
+      }
+
+      chapters.sort((a, b) => a.num - b.num);
+
+      await saveState(true);
+      renderChapters();
+      populateQuestionFilterChapters();
+      updateChapterFilters();
+      refreshAllocationOptions();
+      if (chapterModal) chapterModal.close();
+    }
+
+    function renderChapters(data = chapters) {
+      const tbody = document.getElementById('chaptersTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = data.map(c => `
+        <tr class="hover:bg-gray-50 border-b border-gray-100">
+          <td class="py-2.5 px-4 font-semibold text-blue-800">${getSubjectResolvedName(c.subject, c.medium)}</td>
+          <td class="py-2.5 px-4">${c.medium}</td>
+          <td class="py-2.5 px-4 font-medium text-gray-700">${c.std}</td>
+          <td class="py-2.5 px-4 font-bold text-gray-900">Chapter ${c.num}</td>
+          <td class="py-2.5 px-4 font-semibold text-gray-800">${c.title}</td>
+          <td class="py-2.5 px-4 text-right">
+            <button type="button" onclick="deleteChapter('${c.title}', '${c.std}', '${c.subject || 'Mathematics'}')" class="text-xs text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 px-2.5 py-1 rounded transition-colors font-medium">Delete</button>
+          </td>
+        </tr>
+      `).join('') || `<tr><td colspan="6" class="text-center py-6 text-gray-400 italic">No chapters configured. Click 'Add Chapter' above to register syllabus units.</td></tr>`;
+      updateDashboardCounters();
+    }
+
+    async function deleteChapter(title, std, subject) {
+      if (confirm(`Delete '${title}'?`)) {
+        chapters = chapters.filter(c => !(c.title === title && c.std === std && (c.subject || 'Mathematics') === subject));
+        await saveState(true);
+        renderChapters();
+        populateQuestionFilterChapters();
+        refreshAllocationOptions();
+      }
+    }
+
+    let currentImportTab = 'pdf';
+    let uploadedFileData = null;
+
+    function openImportModal(dest = 'general') {
+      const d = document.getElementById('importDestination');
+      if (dest === 'board') d.value = 'Board Exam';
+      else if (dest === 'gujcet') { d.value = 'GUJCET'; document.getElementById('importStdSelect').value = '12'; }
+      else d.value = 'General';
+      onImportStdOrMediumChange();
+      document.getElementById('importModal')?.showModal();
+    }
+
+    function closeImportModal() { document.getElementById('importModal')?.close(); }
+
+    function switchImportTab(tab) {
+      currentImportTab = tab;
+      document.getElementById('importTabPdf').classList.toggle('hidden', tab !== 'pdf');
+      document.getElementById('importTabCsv').classList.toggle('hidden', tab !== 'csv');
+      document.getElementById('importTabGSheet').classList.toggle('hidden', tab !== 'gsheet');
+
+      document.getElementById('tabBtnPdf').className = tab === 'pdf' ? 'px-3.5 py-2 border-b-2 border-blue-900 text-blue-900 font-semibold focus:outline-none' : 'px-3.5 py-2 text-gray-500 hover:text-gray-700 focus:outline-none';
+      document.getElementById('tabBtnCsv').className = tab === 'csv' ? 'px-3.5 py-2 border-b-2 border-blue-900 text-blue-900 font-semibold focus:outline-none' : 'px-3.5 py-2 text-gray-500 hover:text-gray-700 focus:outline-none';
+      document.getElementById('tabBtnGSheet').className = tab === 'gsheet' ? 'px-3.5 py-2 border-b-2 border-emerald-600 text-emerald-800 font-bold focus:outline-none' : 'px-3.5 py-2 text-emerald-700 font-bold hover:text-emerald-800 focus:outline-none';
+    }
+
+    function updateImportChapterDropdown() {
+      const select = document.getElementById('importChapterNumSelect');
+      if (select) {
+        select.innerHTML = Array.from({ length: 25 }, (_, i) => `<option value="${i + 1}">Chapter ${i + 1}</option>`).join('');
+        handleImportChapterNumChange();
+      }
+    }
+
+    function handleImportChapterNumChange() {
+      const num = parseInt(document.getElementById('importChapterNumSelect').value, 10);
+      const subject = document.getElementById('importSubject').value;
+      const medium = document.getElementById('importMedium').value;
+      const stdVal = document.getElementById('importStdSelect').value;
+      const stdStr = 'Std ' + stdVal;
+
+      const nameInput = document.getElementById('importChapterNameInput');
+      if (!nameInput) return;
+
+      let found = chapters.find(c => 
+        c.num === num &&
+        (c.subject || 'Mathematics') === subject &&
+        (c.std === stdStr || c.std === stdVal) &&
+        (c.medium === medium || c.medium === 'Bilingual' || medium === 'Bilingual')
+      );
+
+      if (!found) {
+        found = chapters.find(c => 
+          c.num === num && 
+          (c.subject || 'Mathematics') === subject && 
+          (c.std === stdStr || c.std === stdVal)
+        );
+      }
+
+      if (found && found.title) {
+        nameInput.value = found.title;
+      } else {
+        nameInput.value = `Chapter ${num}`;
+      }
+    }
+
+    function toggleImportOverrides() {
+      const on = document.getElementById('importOverrideCheck').checked;
+      document.getElementById('importOverrideFields').classList.toggle('opacity-40', !on);
+    }
+
+    function handleCsvFileSelect(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        uploadedFileData = file;
+        const label = document.getElementById('csvFileLabel');
+        if (label) {
+          label.textContent = `Selected: ${file.name}`;
+          label.className = 'inline-block mt-2 text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1 rounded border border-emerald-300';
+        }
+      }
+    }
+
+    async function handlePdfFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = document.getElementById('importStatus');
+      status.className = 'text-xs p-2.5 rounded bg-blue-50 text-blue-700 block';
+      status.textContent = 'Extracting text...';
+
+      try {
+        const ab = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(ab) }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const c = await page.getTextContent();
+          text += c.items.map(x => x.str).join(' ') + '\n';
+        }
+        document.getElementById('pdfTextInput').value = text.trim();
+        status.className = 'text-xs p-2.5 rounded bg-green-50 text-green-700 block';
+        status.textContent = `Extracted text from ${pdf.numPages} page(s).`;
+      } catch (err) {
+        status.className = 'text-xs p-2.5 rounded bg-red-50 text-red-700 block';
+        status.textContent = 'Extraction failed: ' + err.message;
+      }
+    }
+
+    function convertGoogleSheetUrlToCsv(url) {
+      if (!url) return '';
+      if (url.includes('/pubhtml') || url.includes('/pub?')) {
+        return url.replace(/\/pubhtml.*/, '/pub?output=csv');
+      }
+      const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        return `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
+      }
+      return url;
+    }
+
+    async function processSelectedImport() {
+      const std = parseInt(document.getElementById('importStdSelect').value, 10);
+      const subj = document.getElementById('importSubject').value;
+      const med = document.getElementById('importMedium').value;
+      const cat = document.getElementById('importDestination').value;
+      const chNum = document.getElementById('importChapterNumSelect').value;
+      const rawChName = document.getElementById('importChapterNameInput').value.trim() || `Chapter ${chNum}`;
+      const chName = rawChName.startsWith('Chapter') ? rawChName : `Chapter ${chNum}: ${rawChName}`;
+
+      if (currentImportTab === 'gsheet') {
+        const gUrl = document.getElementById('qGoogleSheetUrl').value.trim();
+        if (!gUrl) {
+          alert('Please enter a Google Sheet URL.');
+          return;
+        }
+
+        const csvUrl = convertGoogleSheetUrlToCsv(gUrl);
+        const status = document.getElementById('importStatus');
+        status.className = 'text-xs p-2.5 rounded bg-emerald-50 text-emerald-800 block';
+        status.textContent = 'Connecting to Google Sheets and downloading CSV...';
+
+        try {
+          const resp = await fetch(csvUrl);
+          if (!resp.ok) throw new Error('Could not access sheet. Verify sharing settings: Anyone with link can view.');
+          const csvText = await resp.text();
+
+          const workbook = XLSX.read(csvText, { type: 'string' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+          const parsed = parseQuestionSheetData(jsonData, subj, cat, std, chName, med);
+          if (parsed.length === 0) throw new Error('No valid questions found in sheet.');
+
+          questions.push(...parsed);
+          await saveState(true);
+          renderQuestions();
+          refreshAllocationOptions();
+          closeImportModal();
+          alert(`Success! Imported ${parsed.length} questions from Google Sheet.`);
+        } catch (err) {
+          alert('Google Sheet Import Error: ' + err.message);
+          status.className = 'text-xs p-2.5 rounded bg-red-50 text-red-700 block';
+          status.textContent = err.message;
+        }
+        return;
+      }
+
+      if (currentImportTab === 'csv') {
+        if (!uploadedFileData) {
+          alert('Please select an Excel or CSV file.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+            const parsed = parseQuestionSheetData(jsonData, subj, cat, std, chName, med);
+            if (parsed.length === 0) throw new Error('No valid questions found in sheet.');
+
+            questions.push(...parsed);
+            await saveState(true);
+            renderQuestions();
+            refreshAllocationOptions();
+            closeImportModal();
+            alert(`Success! Imported ${parsed.length} questions and synced permanently.`);
+          } catch (err) {
+            alert('File processing error: ' + err.message);
+          }
+        };
+        reader.readAsArrayBuffer(uploadedFileData);
+        return;
+      }
+
+      if (currentImportTab === 'pdf') {
+        const raw = document.getElementById('pdfTextInput').value.trim();
+        if (!raw) { alert('No text available to import.'); return; }
+
+        const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 5);
+        const newItems = lines.map(line => ({
+          id: 'q_' + Math.random().toString(36).substring(2, 9),
+          subject: subj,
+          category: cat,
+          std,
+          chapter: chName,
+          marks: cat === 'GUJCET' ? 1 : 2,
+          type: (cat === 'GUJCET' || /\([A-D]\)/i.test(line)) ? 'MCQ' : 'Short Answer',
+          medium: med,
+          textEn: med === 'Gujarati' ? '' : line,
+          textGu: med === 'Gujarati' ? line : '',
+          answer: '',
+          usage: 0
+        }));
+
+        questions.push(...newItems);
+        await saveState(true);
+        renderQuestions();
+        refreshAllocationOptions();
+        closeImportModal();
+        alert(`Success! Imported ${newItems.length} questions and synced permanently.`);
+      }
+    }
+
+    function parseQuestionSheetData(jsonData, subj, cat, std, chName, med) {
+      return jsonData.map(row => {
+        const keys = Object.keys(row);
+        const getVal = (names) => {
+          for (let n of names) {
+            const k = keys.find(x => x.trim().toLowerCase() === n.toLowerCase());
+            if (k && row[k] !== undefined) return row[k];
+          }
+          return '';
+        };
+
+        const qEn = getVal(['question', 'question_en', 'text', 'english', 'prompt']);
+        const qGu = getVal(['gujarati', 'question_gu', 'text_gu']);
+        const ans = getVal(['answer', 'ans', 'solution', 'key']);
+        const m = parseInt(getVal(['marks', 'mark']), 10) || 1;
+        const t = cleanType(getVal(['type', 'qtype', 'question type']));
+
+        if (!qEn && !qGu) return null;
+
+        return {
+          id: 'q_' + Math.random().toString(36).substring(2, 9),
+          subject: subj,
+          category: cat,
+          std: std,
+          chapter: chName,
+          marks: cat === 'GUJCET' ? 1 : m,
+          type: cat === 'GUJCET' ? 'MCQ' : t,
+          medium: med,
+          textEn: med === 'Gujarati' ? '' : String(qEn || qGu),
+          textGu: med === 'English' ? '' : String(qGu || qEn),
+          answer: String(ans || ''),
+          usage: 0
+        };
+      }).filter(Boolean);
+    }
+
+    let currentBpImportTab = 'img';
+    let uploadedBpFile = null;
+
+    function openBlueprintMultiModal() {
+      const modal = document.getElementById('importBlueprintModal');
+      const statusEl = document.getElementById('bpOcrStatus');
+      const textContainer = document.getElementById('bpOcrTextContainer');
+
+      if (statusEl) statusEl.className = 'hidden';
+      if (textContainer) textContainer.classList.add('hidden');
+      uploadedBpFile = null;
+
+      switchBpImportTab('img');
+      if (modal) modal.showModal();
+    }
+
+    function closeBlueprintMultiModal() {
+      const modal = document.getElementById('importBlueprintModal');
+      if (modal) modal.close();
+    }
+
+    function switchBpImportTab(tab) {
+      currentBpImportTab = tab;
+      ['img', 'pdf', 'word', 'sheet'].forEach(t => {
+        const btn = document.getElementById('bpTabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        const content = document.getElementById('bpTabContent' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (content) content.classList.toggle('hidden', t !== tab);
+        if (btn) {
+          if (t === tab) {
+            btn.className = 'px-4 py-2 border-b-2 border-indigo-600 text-indigo-600 font-bold flex items-center gap-1.5';
+          } else {
+            btn.className = 'px-4 py-2 text-gray-500 hover:text-gray-700 flex items-center gap-1.5';
+          }
+        }
+      });
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function handleBlueprintImageSelect(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        uploadedBpFile = file;
+        document.getElementById('bpImageFileLabel').textContent = `Selected: ${file.name}`;
+      }
+    }
+
+    function handleBlueprintPdfSelect(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        uploadedBpFile = file;
+        document.getElementById('bpPdfFileLabel').textContent = `Selected: ${file.name}`;
+      }
+    }
+
+    function handleBlueprintWordSelect(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        uploadedBpFile = file;
+        document.getElementById('bpWordFileLabel').textContent = `Selected: ${file.name}`;
+      }
+    }
+
+    async function fetchBlueprintGoogleSheet() {
+      const url = document.getElementById('bpGoogleSheetUrl').value.trim();
+      if (!url) {
+        alert('Please enter a Google Sheet URL.');
+        return;
+      }
+      const csvUrl = convertGoogleSheetUrlToCsv(url);
+      const statusEl = document.getElementById('bpOcrStatus');
+      statusEl.className = 'text-xs p-3 rounded-lg bg-emerald-50 text-emerald-800 block';
+      statusEl.textContent = 'Downloading and parsing Google Sheet blueprint...';
+
+      try {
+        const res = await fetch(csvUrl);
+        if (!res.ok) throw new Error('Could not fetch sheet. Ensure anyone with link can view.');
+        const csv = await res.text();
+        document.getElementById('bpOcrRawText').value = csv;
+        document.getElementById('bpOcrTextContainer').classList.remove('hidden');
+
+        const rules = parseBlueprintOcrText(csv);
+        statusEl.textContent = `Success: Detected and loaded ${rules.length} chapter rules from Google Sheet.`;
+      } catch (err) {
+        statusEl.className = 'text-xs p-3 rounded-lg bg-red-50 text-red-700 block';
+        statusEl.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    async function executeBlueprintMultiImport() {
+      const statusEl = document.getElementById('bpOcrStatus');
+      const btn = document.getElementById('btnExecuteBlueprintOcr');
+      const originalBtnText = btn.innerHTML;
+
+      statusEl.className = 'text-xs p-3 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-2';
+      statusEl.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-600"></i> Parsing blueprint content...`;
+      btn.disabled = true;
+      if (window.lucide) lucide.createIcons();
+
+      try {
+        let extractedText = '';
+
+        if (currentBpImportTab === 'img') {
+          if (!uploadedBpFile) throw new Error('Please select an image file first.');
+          const worker = await Tesseract.createWorker(['eng', 'guj']);
+          const ret = await worker.recognize(uploadedBpFile);
+          await worker.terminate();
+          extractedText = ret.data.text;
+        } else if (currentBpImportTab === 'pdf') {
+          if (!uploadedBpFile) throw new Error('Please select a PDF file first.');
+          const ab = await uploadedBpFile.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(ab) }).promise;
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            extractedText += content.items.map(x => x.str).join(' ') + '\n';
+          }
+        } else if (currentBpImportTab === 'word') {
+          if (!uploadedBpFile) throw new Error('Please select a .docx Word document.');
+          const ab = await uploadedBpFile.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer: ab });
+          extractedText = result.value;
+        } else if (currentBpImportTab === 'sheet') {
+          extractedText = document.getElementById('bpOcrRawText').value;
+          if (!extractedText) throw new Error('Click Fetch on the Google Sheet URL first.');
+        }
+
+        document.getElementById('bpOcrRawText').value = extractedText;
+        document.getElementById('bpOcrTextContainer').classList.remove('hidden');
+
+        const rules = parseBlueprintOcrText(extractedText);
+        if (rules.length === 0) {
+          statusEl.className = 'text-xs p-3 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 block';
+          statusEl.textContent = 'Parsing complete, but could not detect structured rows. Review raw text below and adjust rules manually.';
+        } else {
+          statusEl.className = 'text-xs p-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+          statusEl.textContent = `Success! Mapped ${rules.length} chapter allocation rules from blueprint.`;
+
+          setTimeout(() => {
+            closeBlueprintMultiModal();
+            refreshAllocationOptions();
+          }, 1200);
+        }
+      } catch (err) {
+        statusEl.className = 'text-xs p-3 rounded-lg bg-red-50 text-red-700 border border-red-200 block';
+        statusEl.textContent = 'Import error: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnText;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function parseBlueprintOcrText(rawText) {
+      if (!rawText) return [];
+      const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
+      const availChapters = getAvailableChaptersForBlueprint();
+      const parsedRules = [];
+
+      lines.forEach((line) => {
+        const chNumMatch = line.match(/(?:chapter|ch|unit|પ્રકરણ|પાઠ)\s*[:.-]?\s*(\d+)/i) || line.match(/^(\d+)\s+([a-zA-Z\u0A80-\u0AFF\s]{3,})/i);
+        if (chNumMatch) {
+          const num = parseInt(chNumMatch[1], 10);
+          let matchedChapter = availChapters.find(ch => extractChapterNumber(ch) === num) || `Chapter ${num}`;
+          const numbers = line.match(/\d+/g)?.map(n => parseInt(n, 10)) || [];
+
+          const row = document.querySelector(`.matrix-row[data-chapter="${CSS.escape(matchedChapter)}"]`);
+          if (row && numbers.length >= 2) {
+            const count1 = numbers[1] || 0;
+            const input1 = row.querySelector('.matrix-input-1m');
+            if (input1) input1.value = count1;
+          }
+
+          parsedRules.push({ chapter: matchedChapter });
+        }
+      });
+
+      updateAllocationMarksSummary();
+      return parsedRules;
+    }
+
+    function handleExamTypePresetChange(preset) {
+      const nameInput = document.getElementById('bpName');
+      const durationInput = document.getElementById('bpDuration');
+
+      if (preset === 'Unit Test') {
+        nameInput.value = 'Unit Test Examination';
+        durationInput.value = '1 Hour';
+      } else if (preset === 'First Test') {
+        nameInput.value = 'First Terminal Examination';
+        durationInput.value = '2 Hours';
+      } else if (preset === 'Second Test') {
+        nameInput.value = 'Second Terminal Examination';
+        durationInput.value = '2 Hours';
+      } else if (preset === 'Annual Exam') {
+        nameInput.value = 'Annual Examination';
+        durationInput.value = '3 Hours';
+      } else if (preset === 'Board Exam') {
+        nameInput.value = 'GSEB Board Pattern Examination';
+        durationInput.value = '3 Hours';
+      } else if (preset === 'GUJCET Exam') {
+        nameInput.value = 'GUJCET Mock Examination';
+        durationInput.value = '1 Hour';
+      }
+    }
+
+    function loadExamPreset(preset) {
+      const select = document.getElementById('bpExamTypeSelect');
+      if (select) {
+        select.value = preset;
+        handleExamTypePresetChange(preset);
+      }
+      switchView('blueprints');
+      refreshAllocationOptions();
+    }
+
+    function extractChapterNumber(str) {
+      if (!str) return null;
+      const m = str.match(/(?:chapter|ch|unit|પ્રકરણ|પાઠ)\s*(\d+)/i) || str.match(/^(\d+)/);
+      return m ? parseInt(m[1], 10) : null;
+    }
+
+    function getAvailableChaptersForBlueprint() {
+      const curSubject = document.getElementById('bpSubject')?.value || 'Mathematics';
+      const curStdVal = (document.getElementById('bpStd')?.value || '12').replace('Std ', '');
+      const curStd = 'Std ' + curStdVal;
+
+      const chapterByNumber = new Map();
+
+      chapters.forEach(c => {
+        if ((c.subject || 'Mathematics') === curSubject && (c.std === curStd || c.std === curStdVal)) {
+          const num = parseInt(c.num, 10);
+          if (!isNaN(num) && !chapterByNumber.has(num)) {
+            chapterByNumber.set(num, `Chapter ${num}: ${c.title}`);
+          }
+        }
+      });
+
+      questions.forEach(q => {
+        if ((q.subject || 'Mathematics') === curSubject && String(q.std).replace('Std ', '') === curStdVal && q.chapter) {
+          const num = extractChapterNumber(q.chapter);
+          if (num !== null && !isNaN(num)) {
+            if (!chapterByNumber.has(num)) {
+              chapterByNumber.set(num, q.chapter);
+            }
+          }
+        }
+      });
+
+      if (chapterByNumber.size === 0) {
+        for (let i = 1; i <= 13; i++) {
+          chapterByNumber.set(i, `Chapter ${i}: Unit ${i}`);
+        }
+      }
+
+      return Array.from(chapterByNumber.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(entry => entry[1]);
+    }
+
+    function isChapterMatch(qChapter, ruleChapter) {
+      if (!qChapter || !ruleChapter) return false;
+      const cleanQ = qChapter.trim().toLowerCase();
+      const cleanR = ruleChapter.trim().toLowerCase();
+      if (cleanQ === cleanR) return true;
+
+      const numQ = extractChapterNumber(cleanQ);
+      const numR = extractChapterNumber(cleanR);
+      if (numQ !== null && numR !== null && numQ === numR) return true;
+
+      return cleanQ.includes(cleanR) || cleanR.includes(cleanQ);
+    }
+
+    function calculateQuestionAvailability(chapter, marks) {
+      const curSubject = document.getElementById('bpSubject')?.value || 'Mathematics';
+      const curStdVal = (document.getElementById('bpStd')?.value || '12').replace('Std ', '');
+      const curMedium = document.getElementById('bpMedium')?.value || 'English';
+      const m = parseInt(marks, 10) || 1;
+
+      return questions.filter(q => {
+        const matchesSubject = (q.subject || 'Mathematics') === curSubject;
+        const matchesStd = String(q.std).replace('Std ', '') === curStdVal;
+        const matchesChapter = isChapterMatch(q.chapter, chapter);
+        const matchesMarks = Number(q.marks) === m;
+        const med = q.medium || detectQuestionMedium(q);
+        const matchesMed = (curMedium === 'Bilingual') ? true : (med === 'Bilingual' || med === curMedium);
+
+        return matchesSubject && matchesStd && matchesChapter && matchesMarks && matchesMed;
+      }).length;
+    }
+
+    function refreshAllocationOptions() {
+      const tbody = document.getElementById('allocationsMatrixBody');
+      if (!tbody) return;
+
+      const availChapters = getAvailableChaptersForBlueprint();
+      const existingValues = new Map();
+
+      tbody.querySelectorAll('.matrix-row').forEach(row => {
+        const ch = row.getAttribute('data-chapter');
+        existingValues.set(ch, {
+          m1: row.querySelector('.matrix-input-1m')?.value || '0',
+          m2: row.querySelector('.matrix-input-2m')?.value || '0',
+          m3: row.querySelector('.matrix-input-3m')?.value || '0',
+          m4: row.querySelector('.matrix-input-4m')?.value || '0',
+          customMarks: row.querySelector('.matrix-custom-marks')?.value || '5',
+          customQues: row.querySelector('.matrix-custom-ques')?.value || '0'
+        });
+      });
+
+      tbody.innerHTML = availChapters.map(ch => {
+        const prev = existingValues.get(ch) || { m1: 0, m2: 0, m3: 0, m4: 0, customMarks: 5, customQues: 0 };
+        const av1 = calculateQuestionAvailability(ch, 1);
+        const av2 = calculateQuestionAvailability(ch, 2);
+        const av3 = calculateQuestionAvailability(ch, 3);
+        const av4 = calculateQuestionAvailability(ch, 4);
+        const customMarksVal = parseInt(prev.customMarks, 10) || 5;
+        const avCustom = calculateQuestionAvailability(ch, customMarksVal);
+
+        return `
+          <tr class="matrix-row hover:bg-slate-50/80 transition-colors border-b border-gray-100" data-chapter="${ch}">
+            <td class="py-3 px-4 font-semibold text-gray-900 truncate max-w-[210px]" title="${ch}">
+              ${ch}
+            </td>
+
+            <!-- 1 MARK -->
+            <td class="py-2.5 px-2 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <input type="number" min="0" max="50" value="${prev.m1}" oninput="handleMatrixCellChange(this)" class="matrix-input-1m w-12 border border-gray-300 rounded px-1.5 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" />
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${av1 > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
+                  Av:${av1}
+                </span>
+              </div>
+            </td>
+
+            <!-- 2 MARKS -->
+            <td class="py-2.5 px-2 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <input type="number" min="0" max="50" value="${prev.m2}" oninput="handleMatrixCellChange(this)" class="matrix-input-2m w-12 border border-gray-300 rounded px-1.5 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" />
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${av2 > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
+                  Av:${av2}
+                </span>
+              </div>
+            </td>
+
+            <!-- 3 MARKS -->
+            <td class="py-2.5 px-2 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <input type="number" min="0" max="50" value="${prev.m3}" oninput="handleMatrixCellChange(this)" class="matrix-input-3m w-12 border border-gray-300 rounded px-1.5 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" />
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${av3 > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
+                  Av:${av3}
+                </span>
+              </div>
+            </td>
+
+            <!-- 4 MARKS -->
+            <td class="py-2.5 px-2 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <input type="number" min="0" max="50" value="${prev.m4}" oninput="handleMatrixCellChange(this)" class="matrix-input-4m w-12 border border-gray-300 rounded px-1.5 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" />
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${av4 > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
+                  Av:${av4}
+                </span>
+              </div>
+            </td>
+
+            <!-- 5th COLUMN: CUSTOM MANUAL MARKS & QUES COUNT -->
+            <td class="py-2.5 px-2 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <div class="flex items-center bg-gray-50 rounded border border-gray-300 px-1 py-0.5">
+                  <input type="number" min="1" max="50" value="${prev.customMarks}" oninput="handleCustomMarksValueChange(this)" class="matrix-custom-marks w-9 text-center font-bold text-xs bg-transparent outline-none text-indigo-700" title="Manually type Marks (e.g. 5, 6, 8, 10)" />
+                  <span class="text-[10px] text-gray-500 font-bold">M</span>
+                </div>
+                <span class="text-gray-400 font-bold">:</span>
+                <input type="number" min="0" max="50" value="${prev.customQues}" oninput="handleMatrixCellChange(this)" class="matrix-custom-ques w-11 border border-gray-300 rounded px-1.5 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" title="Number of Questions for this custom mark" />
+                <span class="matrix-custom-avail inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${avCustom > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
+                  Av:${avCustom}
+                </span>
+              </div>
+            </td>
+
+            <!-- ROW TOTAL SUMMARY -->
+            <td class="py-2.5 px-3 text-center">
+              <span class="matrix-row-summary font-bold text-gray-700 block">0 Q / 0 M</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('.matrix-row').forEach(row => updateSingleRowSummary(row));
+      updateAllocationMarksSummary();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function handleCustomMarksValueChange(input) {
+      const row = input.closest('.matrix-row');
+      if (!row) return;
+      const ch = row.getAttribute('data-chapter');
+      const marksVal = parseInt(input.value, 10) || 1;
+      const av = calculateQuestionAvailability(ch, marksVal);
+      const avBadge = row.querySelector('.matrix-custom-avail');
+      if (avBadge) {
+        avBadge.textContent = `Av:${av}`;
+        avBadge.className = `matrix-custom-avail inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${av > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}`;
+      }
+      updateSingleRowSummary(row);
+      updateAllocationMarksSummary();
+    }
+
+    function handleMatrixCellChange(input) {
+      const row = input.closest('.matrix-row');
+      if (row) updateSingleRowSummary(row);
+      updateAllocationMarksSummary();
+    }
+
+    function updateSingleRowSummary(row) {
+      const c1 = parseInt(row.querySelector('.matrix-input-1m')?.value, 10) || 0;
+      const c2 = parseInt(row.querySelector('.matrix-input-2m')?.value, 10) || 0;
+      const c3 = parseInt(row.querySelector('.matrix-input-3m')?.value, 10) || 0;
+      const c4 = parseInt(row.querySelector('.matrix-input-4m')?.value, 10) || 0;
+      const cCustomMarks = parseInt(row.querySelector('.matrix-custom-marks')?.value, 10) || 5;
+      const cCustomQues = parseInt(row.querySelector('.matrix-custom-ques')?.value, 10) || 0;
+
+      const totalQ = c1 + c2 + c3 + c4 + cCustomQues;
+      const totalM = (c1 * 1) + (c2 * 2) + (c3 * 3) + (c4 * 4) + (cCustomQues * cCustomMarks);
+
+      const summaryEl = row.querySelector('.matrix-row-summary');
+      if (summaryEl) {
+        summaryEl.textContent = `${totalQ} Q / ${totalM} M`;
+        summaryEl.className = totalM > 0 ? 'matrix-row-summary font-bold text-blue-900 block' : 'matrix-row-summary font-medium text-gray-400 block';
+      }
+    }
+
+    function updateAllocationMarksSummary() {
+      const rows = document.querySelectorAll('.matrix-row');
+      let grandTotalMarks = 0;
+      let grandTotalQuestions = 0;
+
+      rows.forEach(r => {
+        const c1 = parseInt(r.querySelector('.matrix-input-1m')?.value, 10) || 0;
+        const c2 = parseInt(r.querySelector('.matrix-input-2m')?.value, 10) || 0;
+        const c3 = parseInt(r.querySelector('.matrix-input-3m')?.value, 10) || 0;
+        const c4 = parseInt(r.querySelector('.matrix-input-4m')?.value, 10) || 0;
+        const cCustomMarks = parseInt(r.querySelector('.matrix-custom-marks')?.value, 10) || 5;
+        const cCustomQues = parseInt(r.querySelector('.matrix-custom-ques')?.value, 10) || 0;
+
+        grandTotalQuestions += (c1 + c2 + c3 + c4 + cCustomQues);
+        grandTotalMarks += (c1 * 1) + (c2 * 2) + (c3 * 3) + (c4 * 4) + (cCustomQues * cCustomMarks);
+      });
+
+      const targetInput = document.getElementById('bpTargetMarks');
+      const targetMarks = parseInt(targetInput?.value, 10) || 0;
+      const summaryEl = document.getElementById('allocationTotalSummary');
+
+      if (summaryEl) {
+        summaryEl.textContent = `Allocated: ${grandTotalMarks} / ${targetMarks} Marks (${grandTotalQuestions} Questions)`;
+        if (grandTotalMarks === targetMarks && targetMarks > 0) {
+          summaryEl.className = 'text-xs font-semibold px-2.5 py-1.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs';
+        } else if (grandTotalMarks > targetMarks) {
+          summaryEl.className = 'text-xs font-semibold px-2.5 py-1.5 rounded bg-red-100 text-red-800 border border-red-300 shadow-2xs';
+        } else {
+          summaryEl.className = 'text-xs font-semibold px-2.5 py-1.5 rounded bg-gray-100 text-gray-700 shadow-2xs';
+        }
+      }
+    }
+
+    async function saveBlueprintOnly(showNotice = false) {
+      const rules = [];
+      const rawMatrix = {};
+
+      document.querySelectorAll('.matrix-row').forEach(row => {
+        const chapter = row.getAttribute('data-chapter');
+        const c1 = parseInt(row.querySelector('.matrix-input-1m')?.value, 10) || 0;
+        const c2 = parseInt(row.querySelector('.matrix-input-2m')?.value, 10) || 0;
+        const c3 = parseInt(row.querySelector('.matrix-input-3m')?.value, 10) || 0;
+        const c4 = parseInt(row.querySelector('.matrix-input-4m')?.value, 10) || 0;
+        const cCustomMarks = parseInt(row.querySelector('.matrix-custom-marks')?.value, 10) || 5;
+        const cCustomQues = parseInt(row.querySelector('.matrix-custom-ques')?.value, 10) || 0;
+
+        rawMatrix[chapter] = { m1: c1, m2: c2, m3: c3, m4: c4, customMarks: cCustomMarks, customQues: cCustomQues };
+
+        if (c1 > 0) rules.push({ chapter, type: 'MCQ', count: c1, marks: 1 });
+        if (c2 > 0) rules.push({ chapter, type: 'Short Answer', count: c2, marks: 2 });
+        if (c3 > 0) rules.push({ chapter, type: 'Short Answer', count: c3, marks: 3 });
+        if (c4 > 0) rules.push({ chapter, type: 'Long Answer', count: c4, marks: 4 });
+        if (cCustomQues > 0) rules.push({ chapter, type: 'Long Answer', count: cCustomQues, marks: cCustomMarks });
+      });
+
+      const bp = {
+        id: 'bp_' + Date.now(),
+        school: document.getElementById('bpSchoolName').value.trim(),
+        name: document.getElementById('bpName').value.trim(),
+        examType: document.getElementById('bpExamTypeSelect').value,
+        subject: document.getElementById('bpSubject').value,
+        medium: document.getElementById('bpMedium').value,
+        std: document.getElementById('bpStd').value,
+        targetMarks: parseInt(document.getElementById('bpTargetMarks').value, 10) || 0,
+        duration: document.getElementById('bpDuration').value.trim(),
+        instEn: document.getElementById('bpInstEn').value.trim(),
+        instGu: document.getElementById('bpInstGu').value.trim(),
+        rules: rules,
+        rawMatrix: rawMatrix,
+        updatedAt: new Date().toISOString()
+      };
+
+      const existingIdx = savedBlueprints.findIndex(b => b.name === bp.name && b.std === bp.std && b.subject === bp.subject);
+      if (existingIdx !== -1) {
+        bp.id = savedBlueprints[existingIdx].id;
+        savedBlueprints[existingIdx] = bp;
+      } else {
+        savedBlueprints.unshift(bp);
+      }
+
+      await saveState(true);
+      renderBlueprintsTable();
+
+      if (showNotice) {
+        alert(`Blueprint "${bp.name}" saved successfully!`);
+      }
+      return bp;
+    }
+
+    function renderBlueprintsTable() {
+      const tbody = document.getElementById('blueprintsTbody');
+      const badge = document.getElementById('savedBlueprintsCountBadge');
+      if (badge) badge.textContent = `${savedBlueprints.length} Saved`;
+      if (!tbody) return;
+
+      if (!savedBlueprints || savedBlueprints.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-400 italic">No blueprints saved yet. Click "Save Blueprint" above to store exam templates.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = savedBlueprints.map(bp => {
+        const subDisplay = getSubjectResolvedName(bp.subject, bp.medium);
+        return `
+          <tr class="hover:bg-slate-50/80 transition-colors border-b border-gray-100">
+            <td class="py-3 px-3 font-semibold text-gray-900">
+              <div>${bp.name}</div>
+              <div class="text-[11px] text-indigo-700 font-normal mt-0.5">${bp.examType || 'General Exam'} • ${bp.school || ''}</div>
+            </td>
+            <td class="py-3 px-3 text-gray-700 whitespace-nowrap">
+              Std ${bp.std} / <span class="font-semibold text-blue-900">${subDisplay}</span> (${bp.medium})
+            </td>
+            <td class="py-3 px-3 text-center font-bold text-gray-800">
+              ${bp.targetMarks || 0} M
+            </td>
+            <td class="py-3 px-3 text-center font-medium text-slate-600">
+              ${bp.rules ? bp.rules.length : 0} rules
+            </td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">
+              <button type="button" onclick="loadBlueprintIntoDesigner('${bp.id}')" class="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded hover:bg-indigo-100 mr-1.5 transition-colors inline-flex items-center gap-1 shadow-2xs" title="Load blueprint into designer">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i> View / Load
+              </button>
+              <button type="button" onclick="deleteSavedBlueprint('${bp.id}')" class="px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors inline-flex items-center gap-1 shadow-2xs" title="Delete blueprint permanently">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function loadBlueprintIntoDesigner(blueprintId) {
+      const bp = savedBlueprints.find(b => b.id === blueprintId);
+      if (!bp) return;
+
+      document.getElementById('bpSchoolName').value = bp.school || '';
+      document.getElementById('bpName').value = bp.name || '';
+      if (document.getElementById('bpExamTypeSelect')) {
+        document.getElementById('bpExamTypeSelect').value = bp.examType || 'First Test';
+      }
+      document.getElementById('bpStd').value = String(bp.std).replace('Std ', '');
+      document.getElementById('bpMedium').value = bp.medium || 'English';
+
+      onBlueprintStdOrMediumChange();
+
+      setTimeout(() => {
+        document.getElementById('bpSubject').value = bp.subject || 'Mathematics';
+        document.getElementById('bpTargetMarks').value = bp.targetMarks || 50;
+        document.getElementById('bpDuration').value = bp.duration || '2 Hours';
+        document.getElementById('bpInstEn').value = bp.instEn || '';
+        document.getElementById('bpInstGu').value = bp.instGu || '';
+
+        refreshAllocationOptions();
+
+        setTimeout(() => {
+          const matrixRows = document.querySelectorAll('.matrix-row');
+
+          if (bp.rawMatrix) {
+            matrixRows.forEach(row => {
+              const ch = row.getAttribute('data-chapter');
+              const data = bp.rawMatrix[ch];
+              if (data) {
+                const in1 = row.querySelector('.matrix-input-1m');
+                const in2 = row.querySelector('.matrix-input-2m');
+                const in3 = row.querySelector('.matrix-input-3m');
+                const in4 = row.querySelector('.matrix-input-4m');
+                const inCm = row.querySelector('.matrix-custom-marks');
+                const inCq = row.querySelector('.matrix-custom-ques');
+
+                if (in1) in1.value = data.m1 || 0;
+                if (in2) in2.value = data.m2 || 0;
+                if (in3) in3.value = data.m3 || 0;
+                if (in4) in4.value = data.m4 || 0;
+                if (inCm) inCm.value = data.customMarks || 5;
+                if (inCq) inCq.value = data.customQues || 0;
+                handleCustomMarksValueChange(inCm);
+                updateSingleRowSummary(row);
+              }
+            });
+          } else if (Array.isArray(bp.rules)) {
+            bp.rules.forEach(rule => {
+              const row = document.querySelector(`.matrix-row[data-chapter="${CSS.escape(rule.chapter)}"]`);
+              if (row) {
+                const m = Number(rule.marks);
+                const count = Number(rule.count) || 0;
+                if (m === 1) row.querySelector('.matrix-input-1m').value = count;
+                else if (m === 2) row.querySelector('.matrix-input-2m').value = count;
+                else if (m === 3) row.querySelector('.matrix-input-3m').value = count;
+                else if (m === 4) row.querySelector('.matrix-input-4m').value = count;
+                else {
+                  const cm = row.querySelector('.matrix-custom-marks');
+                  const cq = row.querySelector('.matrix-custom-ques');
+                  if (cm && cq) { cm.value = m; cq.value = count; handleCustomMarksValueChange(cm); }
+                }
+                updateSingleRowSummary(row);
+              }
+            });
+          }
+          updateAllocationMarksSummary();
+        }, 50);
+      }, 50);
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deleteSavedBlueprint(blueprintId) {
+      const bp = savedBlueprints.find(b => b.id === blueprintId);
+      const name = bp ? bp.name : 'this blueprint';
+
+      if (confirm(`Delete "${name}" permanently?`)) {
+        savedBlueprints = savedBlueprints.filter(b => b.id !== blueprintId);
+        await saveState(true);
+        renderBlueprintsTable();
+        updateDashboardCounters();
+      }
+    }
+
+    async function saveAndGenerateFromBlueprint() {
+      const bp = await saveBlueprintOnly(false);
+
+      const curSubject = bp.subject;
+      const curStdVal = String(bp.std).replace('Std ', '');
+      const curMedium = bp.medium;
+
+      const chosenQuestions = [];
+      const usedIds = new Set();
+      const missingReports = [];
+
+      for (const rule of bp.rules) {
+        const cleanT = (rule.type || 'Short Answer').toLowerCase().trim();
+        const targetMarks = Number(rule.marks);
+
+        let pool = questions.filter(q => {
+          if (usedIds.has(q.id)) return false;
+          const matchesSubject = (q.subject || 'Mathematics') === curSubject;
+          const matchesStd = String(q.std).replace('Std ', '') === curStdVal;
+          const matchesChapter = isChapterMatch(q.chapter, rule.chapter);
+          const matchesMarks = Number(q.marks) === targetMarks;
+          const matchesType = cleanType(q.type).toLowerCase() === cleanT;
+          const med = q.medium || detectQuestionMedium(q);
+          const matchesMed = (curMedium === 'Bilingual') ? true : (med === 'Bilingual' || med === curMedium);
+
+          return matchesSubject && matchesStd && matchesChapter && matchesMarks && matchesType && matchesMed;
+        });
+
+        pool.sort((a, b) => (a.usage || 0) - (b.usage || 0) || (Math.random() - 0.5));
+
+        const needed = rule.count;
+        const picked = pool.slice(0, needed);
+
+        picked.forEach(q => {
+          usedIds.add(q.id);
+          chosenQuestions.push({ ...q, allocatedMarks: targetMarks });
+          q.usage = (q.usage || 0) + 1;
+        });
+
+        if (picked.length < needed) {
+          const shortage = needed - picked.length;
+          const fallbackPool = questions.filter(q => {
+            if (usedIds.has(q.id)) return false;
+            const matchesSubject = (q.subject || 'Mathematics') === curSubject;
+            const matchesStd = String(q.std).replace('Std ', '') === curStdVal;
+            const matchesChapter = isChapterMatch(q.chapter, rule.chapter);
+            return matchesSubject && matchesStd && matchesChapter;
+          });
+
+          fallbackPool.sort((a, b) => (a.usage || 0) - (b.usage || 0) || (Math.random() - 0.5));
+          const fallbackPicked = fallbackPool.slice(0, shortage);
+          fallbackPicked.forEach(q => {
+            usedIds.add(q.id);
+            chosenQuestions.push({ ...q, allocatedMarks: targetMarks });
+            q.usage = (q.usage || 0) + 1;
+          });
+
+          if (picked.length + fallbackPicked.length < needed) {
+            missingReports.push(`${rule.chapter} (${rule.marks} Mark slot)`);
+          }
+        }
+      }
+
+      if (chosenQuestions.length === 0) {
+        alert('No matching questions found in the Question Bank for this blueprint!\n\nPlease add questions or adjust question numbers in the matrix for:\n• Subject: ' + getSubjectResolvedName(curSubject, curMedium) + '\n• Standard: ' + curStdVal);
+        return;
+      }
+
+      if (missingReports.length > 0) {
+        alert('Notice: Insufficient questions in bank for:\n• ' + missingReports.join('\n• '));
+      }
+
+      await saveState(true);
+
+      const today = new Date();
+      const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+      const paperRecord = {
+        id: 'paper_' + Date.now(),
+        school: bp.school || 'BAI AVABAI HIGHSCHOOL',
+        title: bp.name || 'EXAMINATION PAPER',
+        std: bp.std,
+        subject: bp.subject,
+        medium: bp.medium,
+        date: formattedDate,
+        duration: bp.duration || '1 Hour',
+        totalMarks: chosenQuestions.reduce((acc, q) => acc + (q.allocatedMarks || q.marks || 1), 0),
+        instructionsEn: bp.instEn || 'All questions are compulsory.',
+        instructionsGu: bp.instGu || 'બધા પ્રશ્નોના ઉત્તર આપવા ફરજિયાત છે.',
+        questions: chosenQuestions,
+        blueprint: bp
+      };
+
+      savedPapers.unshift(paperRecord);
+      await saveState(true);
+
+      renderGeneratedPaper(paperRecord);
+      renderAllPaperTables();
+      switchView('generate');
+    }
+
+    function renderGeneratedPaper(paper) {
+      currentlyLoadedPaper = paper;
+
+      const subDisplay = getSubjectResolvedName(paper.subject, paper.medium);
+
+      document.getElementById('previewSchoolName').textContent = (paper.school || 'Bai Avabai Highschool').toUpperCase();
+      document.getElementById('previewTitle').textContent = paper.title || 'Examination Paper';
+      document.getElementById('previewStd').textContent = `Standard: ${paper.std}`;
+      document.getElementById('previewSubject').textContent = `Subject: ${subDisplay} (${paper.medium})`;
+      document.getElementById('previewDate').textContent = `Date: ${formatToDDMMYYYY(paper.date)}`;
+      document.getElementById('previewMeta').textContent = `Duration: ${paper.duration} | Total Marks: ${paper.totalMarks}`;
+
+      const instEl = document.getElementById('previewInstructions');
+      instEl.innerHTML = `
+        <div class="italic text-gray-800 cambria-math-text"><strong>General Instructions:</strong> ${paper.instructionsEn || ''}</div>
+        ${paper.instructionsGu ? `<div class="italic text-gray-600 mt-0.5"><strong>સૂચનાઓ:</strong> ${paper.instructionsGu}</div>` : ''}
+      `;
+
+      const qContainer = document.getElementById('paperQuestionsContainer');
+      qContainer.innerHTML = '';
+
+      const sections = [
+        { type: 'MCQ', label: 'Section A: Multiple Choice Questions' },
+        { type: 'Short Answer', label: 'Section B: Short Answer Questions' },
+        { type: 'Long Answer', label: 'Section C: Descriptive / Long Answer Questions' }
+      ];
+
+      let qNumber = 1;
+      const answerKeyEntries = [];
+
+      sections.forEach(sec => {
+        const secQuestions = paper.questions.filter(q => cleanType(q.type) === sec.type);
+        if (secQuestions.length > 0) {
+          const secHeader = document.createElement('div');
+          secHeader.className = 'exam-section-header font-bold uppercase tracking-wider text-xs border-b-2 border-gray-900 pb-1 pt-3 mb-2 flex justify-between cambria-math-text';
+          secHeader.innerHTML = `<span>${sec.label}</span><span>[${secQuestions.reduce((acc, q) => acc + (q.allocatedMarks || q.marks || 1), 0)} Marks]</span>`;
+          qContainer.appendChild(secHeader);
+
+          secQuestions.forEach(q => {
+            const marksVal = q.allocatedMarks || q.marks || 1;
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'exam-q-row py-2.5 flex items-start justify-between gap-4 border-b border-gray-200/60 cambria-math';
+
+            let questionInnerContentHtml = '';
+
+            if (sec.type === 'MCQ') {
+              const parsedEn = parseMcqPromptAndOptions(q.textEn);
+              const parsedGu = parseMcqPromptAndOptions(q.textGu);
+
+              const promptHtml = `
+                <div class="space-y-1">
+                  ${parsedEn.prompt ? `<div class="text-gray-900 font-medium leading-relaxed cambria-math-text">${parsedEn.prompt}</div>` : ''}
+                  ${parsedGu.prompt ? `<div class="text-gray-700 leading-relaxed font-normal">${parsedGu.prompt}</div>` : ''}
+                </div>
+              `;
+
+              let optionsGridHtml = '';
+              const opts = parsedEn.options || parsedGu.options;
+
+              if (opts && opts.length > 0) {
+                optionsGridHtml = `
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2 mt-1">
+                    ${opts.map((opt, oIdx) => {
+                      const guOptText = (parsedGu.options && parsedGu.options[oIdx]) ? parsedGu.options[oIdx].text : '';
+                      return `
+                        <div class="mcq-option-box flex items-start gap-1 text-xs">
+                          <span class="font-bold text-gray-900">${opt.label}</span>
+                          <div class="leading-tight">
+                            ${opt.text ? `<span class="cambria-math-text text-gray-900 font-medium">${opt.text}</span>` : ''}
+                            ${guOptText && guOptText !== opt.text ? `<span class="text-gray-600 block text-[11px] mt-0.5">${guOptText}</span>` : ''}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `;
+              }
+
+              questionInnerContentHtml = promptHtml + optionsGridHtml;
+            } else {
+              questionInnerContentHtml = `
+                <div class="space-y-1">
+                  ${q.textEn ? `<div class="text-gray-900 font-medium leading-relaxed cambria-math-text">${q.textEn}</div>` : ''}
+                  ${q.textGu ? `<div class="text-gray-700 leading-relaxed font-normal">${q.textGu}</div>` : ''}
+                </div>
+              `;
+            }
+
+            itemDiv.innerHTML = `
+              <div class="flex items-start gap-2.5 flex-1">
+                <span class="font-bold text-gray-900 min-w-[24px] cambria-math-text">Q.${qNumber}.</span>
+                <div class="flex-1">${questionInnerContentHtml}</div>
+              </div>
+              <span class="font-bold text-gray-900 whitespace-nowrap pl-2 cambria-math-text">[${marksVal} M]</span>
+            `;
+            qContainer.appendChild(itemDiv);
+
+            answerKeyEntries.push({
+              num: qNumber,
+              marks: marksVal,
+              text: q.textEn || q.textGu,
+              answer: q.answer || 'Answer not specified.'
+            });
+
+            qNumber++;
+          });
+        }
+      });
+
+      const keyList = document.getElementById('answerKeyList');
+      if (keyList) {
+        keyList.innerHTML = answerKeyEntries.map(e => `
+          <div class="p-2.5 border rounded bg-slate-50 flex flex-col gap-1 cambria-math">
+            <div class="flex justify-between items-center text-xs font-bold text-gray-800 cambria-math-text">
+              <span>Question ${e.num} [${e.marks} Mark]</span>
+              <span class="text-emerald-700 font-semibold text-xs">Solution / Key</span>
+            </div>
+            <div class="text-xs text-gray-800 font-medium cambria-math-text">${e.answer}</div>
+          </div>
+        `).join('');
+      }
+
+      renderBlueprintSummaryTable(paper);
+    }
+
+    function renderBlueprintSummaryTable(paper) {
+      const subDisplay = getSubjectResolvedName(paper.subject, paper.medium);
+
+      document.getElementById('bpPrintSchoolName').textContent = (paper.school || '').toUpperCase();
+      document.getElementById('bpPrintTitle').textContent = `${(paper.title || '').toUpperCase()} - BLUEPRINT`;
+      document.getElementById('bpPrintStd').textContent = `Standard: ${paper.std}`;
+      document.getElementById('bpPrintSubject').textContent = `Subject: ${subDisplay} (${paper.medium})`;
+      document.getElementById('bpPrintDate').textContent = `Date: ${formatToDDMMYYYY(paper.date)}`;
+      document.getElementById('bpPrintMeta').textContent = `Total Marks: ${paper.totalMarks}`;
+
+      const tbody = document.getElementById('bpPrintTableBody');
+      const tfoot = document.getElementById('bpPrintTableFoot');
+      if (!tbody) return;
+
+      const bpRules = paper.blueprint?.rules || [];
+      const chMap = new Map();
+
+      bpRules.forEach(r => {
+        if (!chMap.has(r.chapter)) chMap.set(r.chapter, { mcq: 0, short: 0, long: 0, marks: 0, total: 0 });
+        const entry = chMap.get(r.chapter);
+        const t = cleanType(r.type);
+        if (t === 'MCQ') entry.mcq += r.count;
+        else if (t === 'Long Answer') entry.long += r.count;
+        else entry.short += r.count;
+
+        entry.total += r.count;
+        entry.marks += (r.count * r.marks);
+      });
+
+      let grandQues = 0, grandMarks = 0;
+      tbody.innerHTML = Array.from(chMap.entries()).map(([ch, data]) => {
+        grandQues += data.total;
+        grandMarks += data.marks;
+        return `
+          <tr class="text-center cambria-math-text">
+            <td class="border border-gray-400 p-2 text-left font-medium">${ch}</td>
+            <td class="border border-gray-400 p-2">${data.mcq || '-'}</td>
+            <td class="border border-gray-400 p-2">${data.short || '-'}</td>
+            <td class="border border-gray-400 p-2">${data.long || '-'}</td>
+            <td class="border border-gray-400 p-2 font-bold">${data.total}</td>
+            <td class="border border-gray-400 p-2 font-bold">${data.marks} M</td>
+          </tr>
+        `;
+      }).join('');
+
+      if (tfoot) {
+        tfoot.innerHTML = `
+          <tr class="cambria-math-text">
+            <td class="border border-gray-400 p-2 text-left font-bold">Total</td>
+            <td colspan="3" class="border border-gray-400 p-2 text-gray-500 italic">Distribution Summary</td>
+            <td class="border border-gray-400 p-2 font-bold">${grandQues} Questions</td>
+            <td class="border border-gray-400 p-2 font-bold">${grandMarks} Marks</td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderAllPaperTables() {
+      const recentTbody = document.getElementById('recentPapersTbody');
+      const archiveTbody = document.getElementById('archiveTbody');
+
+      const renderRows = (papersList) => {
+        if (!papersList || papersList.length === 0) {
+          return `<tr><td colspan="7" class="py-5 text-center text-gray-400 italic">No examination papers generated yet.</td></tr>`;
+        }
+        return papersList.map(p => {
+          const subDisplay = getSubjectResolvedName(p.subject, p.medium);
+          return `
+            <tr class="hover:bg-gray-50 border-b border-gray-100">
+              <td class="py-2.5 px-3 font-semibold text-gray-900">${p.title}</td>
+              <td class="py-2.5 px-3 text-xs text-gray-600">${p.std} / ${subDisplay} (${p.medium})</td>
+              <td class="py-2.5 px-3 font-bold text-gray-800">${p.totalMarks} M</td>
+              <td class="py-2.5 px-3 text-xs text-gray-500">${formatToDDMMYYYY(p.date)}</td>
+              <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                <button type="button" onclick="loadAndDisplayPaper('${p.id}')" class="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 mr-1">
+                  View & Print
+                </button>
+                <button type="button" onclick="deleteSavedPaper('${p.id}')" class="px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      };
+
+      if (recentTbody) recentTbody.innerHTML = renderRows(savedPapers.slice(0, 5));
+      if (archiveTbody) archiveTbody.innerHTML = renderRows(savedPapers);
+    }
+
+    function loadAndDisplayPaper(paperId) {
+      const p = savedPapers.find(item => item.id === paperId);
+      if (p) {
+        renderGeneratedPaper(p);
+        switchView('generate');
+      }
+    }
+
+    async function deleteSavedPaper(paperId) {
+      if (confirm('Delete this generated paper from archive?')) {
+        savedPapers = savedPapers.filter(item => item.id !== paperId);
+        await saveState(true);
+        renderAllPaperTables();
+      }
+    }
+
+    function toggleAnswerKeyView(show) {
+      const container = document.getElementById('paperAnswerKeyContainer');
+      if (container) {
+        container.classList.toggle('hidden', !show);
+      }
+    }
+
+    function printBlueprintOnly() {
+      document.body.classList.add('print-blueprint-mode');
+      window.print();
+      document.body.classList.remove('print-blueprint-mode');
+    }
+
+    function printPaperOnly() {
+      document.getElementById('paperAnswerKeyContainer').classList.add('hidden');
+      document.body.classList.remove('print-blueprint-mode');
+      window.print();
+    }
+
+    function printWithSolutions() {
+      document.getElementById('paperAnswerKeyContainer').classList.remove('hidden');
+      document.body.classList.remove('print-blueprint-mode');
+      window.print();
+    }
+
+    function switchView(viewName) {
+      ['dashboard', 'generate', 'board-exam', 'gujcet-exam', 'questions', 'chapters', 'blueprints', 'previous'].forEach(v => {
+        document.getElementById('view-' + v)?.classList.add('hidden');
+      });
+      document.getElementById('view-' + viewName)?.classList.remove('hidden');
+      document.querySelectorAll('aside nav button').forEach(b => b.classList.remove('active-nav'));
+      document.getElementById('nav-' + viewName)?.classList.add('active-nav');
+      if (viewName === 'blueprints') {
+        refreshAllocationOptions();
+        renderBlueprintsTable();
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    window.addEventListener('DOMContentLoaded', initializeDatabase);
+
+    // =========================================================================
+    // === PWA APP INSTALLATION & SERVICE WORKER CONTROLS ======================
+    // =========================================================================
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('btnHeaderInstall');
+
+    // 1. Capture browser install banner and reveal header install button
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installBtn) {
+        installBtn.classList.remove('hidden');
+        installBtn.onclick = async () => {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            installBtn.classList.add('hidden');
+          }
+          deferredPrompt = null;
+        };
+      }
+    });
+
+    // 2. Hide button once app installation is verified
+    window.addEventListener('appinstalled', () => {
+      if (installBtn) installBtn.classList.add('hidden');
+    });
+
+    // 3. Register Service Worker and monitor background deployment updates
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('./sw.js')
+          .then((reg) => {
+            reg.onupdatefound = () => {
+              const installingWorker = reg.installing;
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  const toast = document.getElementById('update-toast');
+                  if (toast) toast.classList.remove('hidden');
+                }
+              };
+            };
+          })
+          .catch((err) => console.warn('Service Worker registration note:', err));
+      });
+    }
+
+    // 4. Wire update toast reload action
+    document.getElementById('btnReloadApp')?.addEventListener('click', () => {
+      window.location.reload();
+    });
+  </script>
+</body>
+</html>
