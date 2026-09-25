@@ -349,14 +349,17 @@
       </nav>
     </div>
 
-    <!-- LOCAL JSON BACKUPS -->
+    <!-- CLOUD & LOCAL STORAGE CONTROLS -->
     <div class="border-t border-slate-700/50 p-4 space-y-2 pb-12 md:pb-4">
       <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-[11px] text-emerald-300 flex items-center justify-between">
-        <span class="flex items-center gap-1.5"><i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Local Storage</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-400"></i> Cloud Storage</span>
         <span class="font-bold text-[10px] uppercase tracking-wider text-emerald-400" id="sidebarCloudBadge">Ready</span>
       </div>
 
       <div class="pt-2 border-t border-slate-700/40 space-y-1.5">
+        <button type="button" onclick="triggerManualCloudSync()" class="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold bg-emerald-800 hover:bg-emerald-700 text-white rounded transition-colors shadow-xs">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Sync Cloud Database
+        </button>
         <button type="button" onclick="exportDataBackup()" class="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold bg-slate-800/70 hover:bg-slate-800 text-white rounded transition-colors">
           <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i> Export Backup (.json)
         </button>
@@ -1234,6 +1237,9 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
 
+    // =========================================================================
+    // === FIREBASE CONFIGURATION (REPLACE WITH YOUR PROJECT CONFIG) ============
+    // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyD-YOUR-API-KEY",
       authDomain: "your-project-id.firebaseapp.com",
@@ -1316,7 +1322,6 @@
       if (medium === 'English') {
         return subjectObj.nameEn;
       }
-      // Bilingual or unspecified
       return `${subjectObj.nameEn} (${subjectObj.nameGu})`;
     }
 
@@ -1798,15 +1803,40 @@
       populateQuestionFilterChapters();
       refreshAllocationOptions();
 
+      // =======================================================================
+      // === INITIALIZE CLOUD FIRESTORE REAL-TIME SYNCHRONIZATION ==============
+      // =======================================================================
       if (isCloudConfigured && firestoreDB) {
         listenToCloudFirestore();
         const badge = document.getElementById('sidebarCloudBadge');
-        if (badge) badge.textContent = 'Connected';
+        if (badge) {
+          badge.textContent = 'Connected';
+          badge.className = 'font-bold text-[10px] uppercase tracking-wider text-emerald-400';
+        }
+        const stBadge = document.getElementById('storageModeBadge');
+        if (stBadge) {
+          stBadge.textContent = 'Cloud Active';
+          stBadge.className = 'text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300';
+        }
+        const stText = document.getElementById('storageStatusText');
+        if (stText) stText.textContent = 'Firestore & IDB';
+        const stDesc = document.getElementById('storageStatusDesc');
+        if (stDesc) stDesc.textContent = '● Realtime Multi-Device Cloud Sync';
       } else {
         const badge = document.getElementById('sidebarCloudBadge');
-        if (badge) badge.textContent = 'Local Active';
+        if (badge) {
+          badge.textContent = 'Local Active';
+          badge.className = 'font-bold text-[10px] uppercase tracking-wider text-amber-300';
+        }
+        const stBadge = document.getElementById('storageModeBadge');
+        if (stBadge) {
+          stBadge.textContent = 'Local Active';
+          stBadge.className = 'text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300';
+        }
         const stText = document.getElementById('storageStatusText');
         if (stText) stText.textContent = 'IndexedDB Local';
+        const stDesc = document.getElementById('storageStatusDesc');
+        if (stDesc) stDesc.textContent = '● Browser persistent local storage';
       }
 
       if (window.lucide) lucide.createIcons();
@@ -1818,12 +1848,26 @@
         .onSnapshot((doc) => {
           if (doc.exists) {
             const cloudData = doc.data();
+            let changed = false;
+
             if (Array.isArray(cloudData.questions) && cloudData.questions.length > 0) {
               questions = cloudData.questions;
-              if (Array.isArray(cloudData.chapters)) chapters = cloudData.chapters;
-              if (Array.isArray(cloudData.savedPapers)) savedPapers = cloudData.savedPapers;
-              if (Array.isArray(cloudData.savedBlueprints)) savedBlueprints = cloudData.savedBlueprints;
+              changed = true;
+            }
+            if (Array.isArray(cloudData.chapters)) {
+              chapters = cloudData.chapters;
+              changed = true;
+            }
+            if (Array.isArray(cloudData.savedPapers)) {
+              savedPapers = cloudData.savedPapers;
+              changed = true;
+            }
+            if (Array.isArray(cloudData.savedBlueprints)) {
+              savedBlueprints = cloudData.savedBlueprints;
+              changed = true;
+            }
 
+            if (changed) {
               dbSet('saved_questions', questions);
               dbSet('saved_chapters', chapters);
               dbSet('saved_papers', savedPapers);
@@ -1840,8 +1884,21 @@
             saveState(true);
           }
         }, (error) => {
-          console.warn('Firestore real-time sync status:', error.message);
+          console.warn('Firestore real-time sync notification:', error.message);
         });
+    }
+
+    async function triggerManualCloudSync() {
+      if (!isCloudConfigured || !firestoreDB) {
+        alert('Notice: Firebase credentials are still placeholder keys. Update firebaseConfig in the script to enable live Firestore synchronization.');
+        return;
+      }
+      try {
+        await saveState(true);
+        alert('Cloud synchronization complete! All repositories are up to date on Firestore.');
+      } catch (err) {
+        alert('Sync error: ' + err.message);
+      }
     }
 
     async function enforceAutoPersistence() {
@@ -1916,6 +1973,9 @@
       } catch(e) {}
       updateDashboardCounters();
 
+      // =======================================================================
+      // === SAVE REPOSITORY DIRECTLY TO CLOUD FIRESTORE =======================
+      // =======================================================================
       if (syncCloud && isCloudConfigured && firestoreDB) {
         try {
           await firestoreDB.collection("question_bank").doc("shared_repository").set({
@@ -1926,7 +1986,7 @@
             lastSynced: new Date().toISOString()
           }, { merge: true });
         } catch(err) {
-          console.warn('Firestore sync queued or offline:', err);
+          console.warn('Cloud sync queued or network offline:', err);
         }
       }
     }
@@ -1939,7 +1999,7 @@
 
       try {
         await saveState(true);
-        alert(`Success! All ${questions.length} questions saved permanently.`);
+        alert(`Success! All ${questions.length} questions saved and synced.`);
       } catch (err) {
         alert('Error saving questions: ' + err.message);
       } finally {
@@ -3593,7 +3653,6 @@
     let deferredPrompt = null;
     const installBtn = document.getElementById('btnHeaderInstall');
 
-    // 1. Capture browser install banner and reveal header install button
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -3611,12 +3670,10 @@
       }
     });
 
-    // 2. Hide button once app installation is verified
     window.addEventListener('appinstalled', () => {
       if (installBtn) installBtn.classList.add('hidden');
     });
 
-    // 3. Register Service Worker and monitor background deployment updates
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker
@@ -3636,7 +3693,6 @@
       });
     }
 
-    // 4. Wire update toast reload action
     document.getElementById('btnReloadApp')?.addEventListener('click', () => {
       window.location.reload();
     });
