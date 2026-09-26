@@ -880,15 +880,16 @@
 
             <!-- HORIZONTAL MATRIX TABLE -->
             <div class="overflow-x-auto table-scroll-container border border-gray-200 rounded-xl mb-4 shadow-2xs bg-white">
-              <table class="w-full text-left text-xs min-w-[880px]">
+              <table class="w-full text-left text-xs min-w-[1020px]">
                 <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-gray-200">
                   <tr>
-                    <th class="py-3 px-4 w-[26%]">Chapter</th>
-                    <th class="py-3 px-2 text-center w-[12%]">1 Mark (MCQ/Obj)</th>
-                    <th class="py-3 px-2 text-center w-[12%]">2 Marks (Short)</th>
-                    <th class="py-3 px-2 text-center w-[12%]">3 Marks (Short)</th>
-                    <th class="py-3 px-2 text-center w-[12%]">4 Marks (Long)</th>
-                    <th class="py-3 px-2 text-center w-[16%]">Custom Marks (Manual)</th>
+                    <th class="py-3 px-3 w-[22%]">Chapter</th>
+                    <th class="py-3 px-2 text-center w-[10%]">1 Mark (MCQ/Obj)</th>
+                    <th class="py-3 px-2 text-center w-[10%]">2 Marks (Short)</th>
+                    <th class="py-3 px-2 text-center w-[10%]">3 Marks (Short)</th>
+                    <th class="py-3 px-2 text-center w-[10%]">4 Marks (Long)</th>
+                    <th class="py-3 px-2 text-center w-[14%]">Custom Marks 1</th>
+                    <th class="py-3 px-2 text-center w-[14%]">Custom Marks 2</th>
                     <th class="py-3 px-3 text-center w-[10%]">Row Total</th>
                   </tr>
                 </thead>
@@ -1239,7 +1240,7 @@
     }
 
     // =========================================================================
-    // === FIREBASE CONFIGURATION (LIVE INTEGRATED FROM YOUR SNIPPET) ===========
+    // === FIREBASE CONFIGURATION ==============================================
     // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyDOiFOkbavTHsZI-cAPWAG6k1-GqvVL6V4",
@@ -1809,9 +1810,7 @@
       populateQuestionFilterChapters();
       refreshAllocationOptions();
 
-      // =======================================================================
-      // === INITIALIZE CLOUD FIRESTORE REAL-TIME SYNCHRONIZATION ==============
-      // =======================================================================
+      // Cloud Firestore sync initialization
       if (isCloudConfigured && firestoreDB) {
         listenToCloudFirestore();
         const badge = document.getElementById('sidebarCloudBadge');
@@ -1979,9 +1978,6 @@
       } catch(e) {}
       updateDashboardCounters();
 
-      // =======================================================================
-      // === SAVE REPOSITORY DIRECTLY TO CLOUD FIRESTORE =======================
-      // =======================================================================
       if (syncCloud && isCloudConfigured && firestoreDB) {
         try {
           await firestoreDB.collection("question_bank").doc("shared_repository").set({
@@ -2935,22 +2931,26 @@
           m3: row.querySelector('.matrix-input-3m')?.value || '0',
           m4: row.querySelector('.matrix-input-4m')?.value || '0',
           customMarks: row.querySelector('.matrix-custom-marks')?.value || '5',
-          customQues: row.querySelector('.matrix-custom-ques')?.value || '0'
+          customQues: row.querySelector('.matrix-custom-ques')?.value || '0',
+          customMarks2: row.querySelector('.matrix-custom-marks-2')?.value || '6',
+          customQues2: row.querySelector('.matrix-custom-ques-2')?.value || '0'
         });
       });
 
       tbody.innerHTML = availChapters.map(ch => {
-        const prev = existingValues.get(ch) || { m1: 0, m2: 0, m3: 0, m4: 0, customMarks: 5, customQues: 0 };
+        const prev = existingValues.get(ch) || { m1: 0, m2: 0, m3: 0, m4: 0, customMarks: 5, customQues: 0, customMarks2: 6, customQues2: 0 };
         const av1 = calculateQuestionAvailability(ch, 1);
         const av2 = calculateQuestionAvailability(ch, 2);
         const av3 = calculateQuestionAvailability(ch, 3);
         const av4 = calculateQuestionAvailability(ch, 4);
         const customMarksVal = parseInt(prev.customMarks, 10) || 5;
         const avCustom = calculateQuestionAvailability(ch, customMarksVal);
+        const customMarks2Val = parseInt(prev.customMarks2, 10) || 6;
+        const avCustom2 = calculateQuestionAvailability(ch, customMarks2Val);
 
         return `
           <tr class="matrix-row hover:bg-slate-50/80 transition-colors border-b border-gray-100" data-chapter="${ch}">
-            <td class="py-3 px-4 font-semibold text-gray-900 truncate max-w-[210px]" title="${ch}">
+            <td class="py-3 px-3 font-semibold text-gray-900 truncate max-w-[200px]" title="${ch}">
               ${ch}
             </td>
 
@@ -2994,17 +2994,32 @@
               </div>
             </td>
 
-            <!-- 5th COLUMN: CUSTOM MANUAL MARKS & QUES COUNT -->
+            <!-- 5th COLUMN: CUSTOM MANUAL MARKS 1 -->
             <td class="py-2.5 px-2 text-center">
               <div class="flex items-center justify-center gap-1">
                 <div class="flex items-center bg-gray-50 rounded border border-gray-300 px-1 py-0.5">
-                  <input type="number" min="1" max="50" value="${prev.customMarks}" oninput="handleCustomMarksValueChange(this)" class="matrix-custom-marks w-9 text-center font-bold text-xs bg-transparent outline-none text-indigo-700" title="Manually type Marks (e.g. 5, 6, 8, 10)" />
+                  <input type="number" min="1" max="50" value="${prev.customMarks}" oninput="handleCustomMarksValueChange(this, 1)" class="matrix-custom-marks w-8 text-center font-bold text-xs bg-transparent outline-none text-indigo-700" title="Manually type Marks (e.g. 5, 6, 8, 10)" />
                   <span class="text-[10px] text-gray-500 font-bold">M</span>
                 </div>
                 <span class="text-gray-400 font-bold">:</span>
-                <input type="number" min="0" max="50" value="${prev.customQues}" oninput="handleMatrixCellChange(this)" class="matrix-custom-ques w-11 border border-gray-300 rounded px-1.5 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" title="Number of Questions for this custom mark" />
-                <span class="matrix-custom-avail inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${avCustom > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
+                <input type="number" min="0" max="50" value="${prev.customQues}" oninput="handleMatrixCellChange(this)" class="matrix-custom-ques w-10 border border-gray-300 rounded px-1 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" title="Number of Questions for this custom mark" />
+                <span class="matrix-custom-avail inline-flex items-center px-1 py-0.5 rounded text-[10px] font-bold ${avCustom > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
                   Av:${avCustom}
+                </span>
+              </div>
+            </td>
+
+            <!-- 6th COLUMN: CUSTOM MANUAL MARKS 2 (BESIDES CUSTOM MARKS 1) -->
+            <td class="py-2.5 px-2 text-center">
+              <div class="flex items-center justify-center gap-1">
+                <div class="flex items-center bg-gray-50 rounded border border-gray-300 px-1 py-0.5">
+                  <input type="number" min="1" max="50" value="${prev.customMarks2}" oninput="handleCustomMarksValueChange(this, 2)" class="matrix-custom-marks-2 w-8 text-center font-bold text-xs bg-transparent outline-none text-purple-700" title="Manually type Second Custom Marks" />
+                  <span class="text-[10px] text-gray-500 font-bold">M</span>
+                </div>
+                <span class="text-gray-400 font-bold">:</span>
+                <input type="number" min="0" max="50" value="${prev.customQues2}" oninput="handleMatrixCellChange(this)" class="matrix-custom-ques-2 w-10 border border-gray-300 rounded px-1 py-1 text-xs text-center font-bold bg-white focus:ring-1 focus:ring-blue-500" title="Number of Questions for second custom mark" />
+                <span class="matrix-custom-avail-2 inline-flex items-center px-1 py-0.5 rounded text-[10px] font-bold ${avCustom2 > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}" title="Available questions in Bank">
+                  Av:${avCustom2}
                 </span>
               </div>
             </td>
@@ -3022,16 +3037,17 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    function handleCustomMarksValueChange(input) {
+    function handleCustomMarksValueChange(input, slot = 1) {
       const row = input.closest('.matrix-row');
       if (!row) return;
       const ch = row.getAttribute('data-chapter');
       const marksVal = parseInt(input.value, 10) || 1;
       const av = calculateQuestionAvailability(ch, marksVal);
-      const avBadge = row.querySelector('.matrix-custom-avail');
+      
+      const avBadge = slot === 2 ? row.querySelector('.matrix-custom-avail-2') : row.querySelector('.matrix-custom-avail');
       if (avBadge) {
         avBadge.textContent = `Av:${av}`;
-        avBadge.className = `matrix-custom-avail inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${av > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}`;
+        avBadge.className = `${slot === 2 ? 'matrix-custom-avail-2' : 'matrix-custom-avail'} inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${av > 0 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500'}`;
       }
       updateSingleRowSummary(row);
       updateAllocationMarksSummary();
@@ -3050,9 +3066,11 @@
       const c4 = parseInt(row.querySelector('.matrix-input-4m')?.value, 10) || 0;
       const cCustomMarks = parseInt(row.querySelector('.matrix-custom-marks')?.value, 10) || 5;
       const cCustomQues = parseInt(row.querySelector('.matrix-custom-ques')?.value, 10) || 0;
+      const cCustomMarks2 = parseInt(row.querySelector('.matrix-custom-marks-2')?.value, 10) || 6;
+      const cCustomQues2 = parseInt(row.querySelector('.matrix-custom-ques-2')?.value, 10) || 0;
 
-      const totalQ = c1 + c2 + c3 + c4 + cCustomQues;
-      const totalM = (c1 * 1) + (c2 * 2) + (c3 * 3) + (c4 * 4) + (cCustomQues * cCustomMarks);
+      const totalQ = c1 + c2 + c3 + c4 + cCustomQues + cCustomQues2;
+      const totalM = (c1 * 1) + (c2 * 2) + (c3 * 3) + (c4 * 4) + (cCustomQues * cCustomMarks) + (cCustomQues2 * cCustomMarks2);
 
       const summaryEl = row.querySelector('.matrix-row-summary');
       if (summaryEl) {
@@ -3073,9 +3091,11 @@
         const c4 = parseInt(r.querySelector('.matrix-input-4m')?.value, 10) || 0;
         const cCustomMarks = parseInt(r.querySelector('.matrix-custom-marks')?.value, 10) || 5;
         const cCustomQues = parseInt(r.querySelector('.matrix-custom-ques')?.value, 10) || 0;
+        const cCustomMarks2 = parseInt(r.querySelector('.matrix-custom-marks-2')?.value, 10) || 6;
+        const cCustomQues2 = parseInt(r.querySelector('.matrix-custom-ques-2')?.value, 10) || 0;
 
-        grandTotalQuestions += (c1 + c2 + c3 + c4 + cCustomQues);
-        grandTotalMarks += (c1 * 1) + (c2 * 2) + (c3 * 3) + (c4 * 4) + (cCustomQues * cCustomMarks);
+        grandTotalQuestions += (c1 + c2 + c3 + c4 + cCustomQues + cCustomQues2);
+        grandTotalMarks += (c1 * 1) + (c2 * 2) + (c3 * 3) + (c4 * 4) + (cCustomQues * cCustomMarks) + (cCustomQues2 * cCustomMarks2);
       });
 
       const targetInput = document.getElementById('bpTargetMarks');
@@ -3106,14 +3126,26 @@
         const c4 = parseInt(row.querySelector('.matrix-input-4m')?.value, 10) || 0;
         const cCustomMarks = parseInt(row.querySelector('.matrix-custom-marks')?.value, 10) || 5;
         const cCustomQues = parseInt(row.querySelector('.matrix-custom-ques')?.value, 10) || 0;
+        const cCustomMarks2 = parseInt(row.querySelector('.matrix-custom-marks-2')?.value, 10) || 6;
+        const cCustomQues2 = parseInt(row.querySelector('.matrix-custom-ques-2')?.value, 10) || 0;
 
-        rawMatrix[chapter] = { m1: c1, m2: c2, m3: c3, m4: c4, customMarks: cCustomMarks, customQues: cCustomQues };
+        rawMatrix[chapter] = { 
+          m1: c1, 
+          m2: c2, 
+          m3: c3, 
+          m4: c4, 
+          customMarks: cCustomMarks, 
+          customQues: cCustomQues,
+          customMarks2: cCustomMarks2,
+          customQues2: cCustomQues2
+        };
 
         if (c1 > 0) rules.push({ chapter, type: 'MCQ', count: c1, marks: 1 });
         if (c2 > 0) rules.push({ chapter, type: 'Short Answer', count: c2, marks: 2 });
         if (c3 > 0) rules.push({ chapter, type: 'Short Answer', count: c3, marks: 3 });
         if (c4 > 0) rules.push({ chapter, type: 'Long Answer', count: c4, marks: 4 });
         if (cCustomQues > 0) rules.push({ chapter, type: 'Long Answer', count: cCustomQues, marks: cCustomMarks });
+        if (cCustomQues2 > 0) rules.push({ chapter, type: 'Long Answer', count: cCustomQues2, marks: cCustomMarks2 });
       });
 
       const bp = {
@@ -3230,6 +3262,8 @@
                 const in4 = row.querySelector('.matrix-input-4m');
                 const inCm = row.querySelector('.matrix-custom-marks');
                 const inCq = row.querySelector('.matrix-custom-ques');
+                const inCm2 = row.querySelector('.matrix-custom-marks-2');
+                const inCq2 = row.querySelector('.matrix-custom-ques-2');
 
                 if (in1) in1.value = data.m1 || 0;
                 if (in2) in2.value = data.m2 || 0;
@@ -3237,7 +3271,10 @@
                 if (in4) in4.value = data.m4 || 0;
                 if (inCm) inCm.value = data.customMarks || 5;
                 if (inCq) inCq.value = data.customQues || 0;
-                handleCustomMarksValueChange(inCm);
+                if (inCm2) inCm2.value = data.customMarks2 || 6;
+                if (inCq2) inCq2.value = data.customQues2 || 0;
+                if (inCm) handleCustomMarksValueChange(inCm, 1);
+                if (inCm2) handleCustomMarksValueChange(inCm2, 2);
                 updateSingleRowSummary(row);
               }
             });
@@ -3254,7 +3291,15 @@
                 else {
                   const cm = row.querySelector('.matrix-custom-marks');
                   const cq = row.querySelector('.matrix-custom-ques');
-                  if (cm && cq) { cm.value = m; cq.value = count; handleCustomMarksValueChange(cm); }
+                  if (cm && cq && (!cq.value || cq.value === '0')) {
+                    cm.value = m; cq.value = count; handleCustomMarksValueChange(cm, 1);
+                  } else {
+                    const cm2 = row.querySelector('.matrix-custom-marks-2');
+                    const cq2 = row.querySelector('.matrix-custom-ques-2');
+                    if (cm2 && cq2) {
+                      cm2.value = m; cq2.value = count; handleCustomMarksValueChange(cm2, 2);
+                    }
+                  }
                 }
                 updateSingleRowSummary(row);
               }
