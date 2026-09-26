@@ -9,8 +9,8 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%2311244e'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='300' font-family='sans-serif' font-weight='900' fill='%2338bdf8'%3E%E2%88%91%3C/text%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%2311244e'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='300' font-family='sans-serif' font-weight='900' fill='%2338bdf8'%3E%E2%88%91%3C/text%3E%3C/svg%3E" />
 
-  <!-- PWA Settings -->
-  <link rel="manifest" href="./manifest.json" />
+  <!-- PWA Manifest placeholder (populated with exact rendered PNG icons at runtime) -->
+  <link id="manifestPlaceholder" rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Question%20Paper%20Generator%22%2C%22short_name%22%3A%22PaperGen%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2311244e%22%2C%22theme_color%22%3A%22%2311244e%22%7D" />
   <meta name="theme-color" content="#11244e" />
 
   <!-- Tailwind CSS CDN -->
@@ -183,7 +183,7 @@
       <form id="formSignup" class="space-y-3 hidden" onsubmit="executeSignup(event)">
         <div>
           <label class="block text-xs font-semibold text-gray-700 mb-1">Full Name</label>
-          <input type="text" id="regName" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Ramesh Patel" />
+          <input type="text" id="regName" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Kalpesh H Tailor" />
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
@@ -210,7 +210,7 @@
         </button>
         <div class="text-center pt-2 text-xs text-gray-600">
           Already registered? 
-          <button type="button" onclick="showAuthView('login')" class="text-blue-600 font-semibold hover:underline">Sign In</button>
+          <button type="button" onclick="showAuthView('login')" class="text-blue-600 font-semibold hover:underline">Sign Up</button>
         </div>
       </form>
 
@@ -293,7 +293,7 @@
             <div class="flex flex-col min-w-0">
               <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Educator</span>
               <div class="flex items-center gap-1 group/name">
-                <span id="sidebarCustomName" class="text-xs font-bold text-white truncate max-w-[120px]">Prof. R. Patel</span>
+                <span id="sidebarCustomName" class="text-xs font-bold text-white truncate max-w-[120px]">KALPESH H TAILOR</span>
                 <button type="button" onclick="promptEditCustomName(event)" class="text-slate-500 hover:text-sky-400 opacity-60 hover:opacity-100 transition" title="Edit name">
                   <i data-lucide="pencil" class="w-3 h-3"></i>
                 </button>
@@ -1240,6 +1240,94 @@
     }
 
     // =========================================================================
+    // === AUTO-GENERATE HIGH-RESOLUTION SIGMA (∑) PNG ICONS FOR PWA INSTALL ===
+    // =========================================================================
+    function generateSigmaIconDataUrl(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      // Rounded rectangle background (#11244e)
+      const radius = size * 0.2;
+      ctx.fillStyle = '#11244e';
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(size - radius, 0);
+      ctx.quadraticCurveTo(size, 0, size, radius);
+      ctx.lineTo(size, size - radius);
+      ctx.quadraticCurveTo(size, size, size - radius, size);
+      ctx.lineTo(radius, size);
+      ctx.quadraticCurveTo(0, size, 0, size - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Sigma Symbol Text (#38bdf8)
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = `900 ${Math.round(size * 0.6)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('∑', size / 2, size * 0.54);
+
+      return canvas.toDataURL('image/png');
+    }
+
+    function setupPwaManifest() {
+      try {
+        const icon192 = generateSigmaIconDataUrl(192);
+        const icon512 = generateSigmaIconDataUrl(512);
+
+        const manifest = {
+          name: "Question Paper Generator",
+          short_name: "PaperGen",
+          description: "Question Paper Generator with Board Exam and GUJCET templates",
+          start_url: "./",
+          display: "standalone",
+          background_color: "#11244e",
+          theme_color: "#11244e",
+          icons: [
+            {
+              src: icon192,
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "any"
+            },
+            {
+              src: icon192,
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "maskable"
+            },
+            {
+              src: icon512,
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any"
+            },
+            {
+              src: icon512,
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "maskable"
+            }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.getElementById('manifestPlaceholder');
+        if (manifestLink) {
+          manifestLink.href = manifestUrl;
+        }
+      } catch (err) {
+        console.warn('PWA Manifest setup notification:', err);
+      }
+    }
+    setupPwaManifest();
+
+    // =========================================================================
     // === FIREBASE CONFIGURATION ==============================================
     // =========================================================================
     const firebaseConfig = {
@@ -1491,8 +1579,8 @@
 
       const savedName = localStorage.getItem(SIDEBAR_NAME_STORAGE_KEY);
       const nameEl = document.getElementById('sidebarCustomName');
-      if (savedName && nameEl) {
-        nameEl.textContent = savedName;
+      if (nameEl) {
+        nameEl.textContent = savedName ? savedName : 'KALPESH H TAILOR';
       }
     }
 
@@ -1511,7 +1599,7 @@
         event.stopPropagation();
       }
       const nameEl = document.getElementById('sidebarCustomName');
-      const currentName = nameEl ? nameEl.textContent : 'Prof. R. Patel';
+      const currentName = nameEl ? nameEl.textContent : 'KALPESH H TAILOR';
       const newName = prompt('Enter your name to display on the panel:', currentName);
       if (newName && newName.trim()) {
         const trimmed = newName.trim();
