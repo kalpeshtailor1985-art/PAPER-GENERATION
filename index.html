@@ -26,9 +26,10 @@
   <!-- Tesseract.js (Client-side OCR for Scanned / Image PDFs & Photos) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-  <!-- FIREBASE CLOUD FIRESTORE INTEGRATION -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <!-- FIREBASE CLOUD FIRESTORE & ANALYTICS INTEGRATION -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics-compat.js"></script>
 
   <style>
     .cambria-math,
@@ -353,7 +354,7 @@
     <div class="border-t border-slate-700/50 p-4 space-y-2 pb-12 md:pb-4">
       <div class="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 text-[11px] text-emerald-300 flex items-center justify-between">
         <span class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-emerald-400"></i> Cloud Storage</span>
-        <span class="font-bold text-[10px] uppercase tracking-wider text-emerald-400" id="sidebarCloudBadge">Ready</span>
+        <span class="font-bold text-[10px] uppercase tracking-wider text-emerald-400" id="sidebarCloudBadge">Connecting...</span>
       </div>
 
       <div class="pt-2 border-t border-slate-700/40 space-y-1.5">
@@ -1238,25 +1239,30 @@
     }
 
     // =========================================================================
-    // === FIREBASE CONFIGURATION (REPLACE WITH YOUR PROJECT CONFIG) ============
+    // === FIREBASE CONFIGURATION (LIVE INTEGRATED FROM YOUR SNIPPET) ===========
     // =========================================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyD-YOUR-API-KEY",
-      authDomain: "your-project-id.firebaseapp.com",
-      projectId: "your-project-id",
-      storageBucket: "your-project-id.appspot.com",
-      messagingSenderId: "123456789012",
-      appId: "1:123456789012:web:abcdef123456"
+      apiKey: "AIzaSyDOiFOkbavTHsZI-cAPWAG6k1-GqvVL6V4",
+      authDomain: "paper-gen-17.firebaseapp.com",
+      projectId: "paper-gen-17",
+      storageBucket: "paper-gen-17.firebasestorage.app",
+      messagingSenderId: "611466168099",
+      appId: "1:611466168099:web:f109cae1df50186ea9ae96",
+      measurementId: "G-GEH8DXKW29"
     };
 
     let firestoreDB = null;
+    let firebaseAnalytics = null;
     let isCloudConfigured = false;
 
     try {
-      if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "AIzaSyD-YOUR-API-KEY") {
+      if (firebaseConfig.apiKey) {
         firebase.initializeApp(firebaseConfig);
         firestoreDB = firebase.firestore();
         firestoreDB.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+        if (typeof firebase.analytics === 'function') {
+          firebaseAnalytics = firebase.analytics();
+        }
         isCloudConfigured = true;
       }
     } catch (err) {
@@ -1890,7 +1896,7 @@
 
     async function triggerManualCloudSync() {
       if (!isCloudConfigured || !firestoreDB) {
-        alert('Notice: Firebase credentials are still placeholder keys. Update firebaseConfig in the script to enable live Firestore synchronization.');
+        alert('Notice: Firebase is not configured properly.');
         return;
       }
       try {
@@ -2330,7 +2336,6 @@
       await saveState(true);
       renderChapters();
       populateQuestionFilterChapters();
-      updateChapterFilters();
       refreshAllocationOptions();
       if (chapterModal) chapterModal.close();
     }
