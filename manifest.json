@@ -1,7 +1,7 @@
 {
-  "name": "GSEB Question Paper Generator",
+  "name": "Question Paper Generator",
   "short_name": "Paper Gen",
-  "description": "GSEB Question Paper Generator and Blueprint Designer for Standards 9 to 12",
+  "description": "Question Paper Generator and Blueprint Designer for Standards 9 to 12",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
