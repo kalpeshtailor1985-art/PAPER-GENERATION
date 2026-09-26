@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GSEB Question Paper Generator</title>
+  <title>Question Paper Generator</title>
 
   <!-- High-Resolution Embedded Sigma (∑) Favicon & Apple Touch Icon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%2311244e'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='300' font-family='sans-serif' font-weight='900' fill='%2338bdf8'%3E%E2%88%91%3C/text%3E%3C/svg%3E" />
@@ -380,7 +380,7 @@
         </button>
         <div>
           <h2 class="text-sm md:text-base font-bold text-gray-800 truncate max-w-[200px] sm:max-w-none" id="headerSchoolName">Bai Avabai Highschool</h2>
-          <p class="text-[10px] md:text-xs text-gray-500 hidden sm:block">GSEB Question Paper Generator (Std 9 to 12 All Streams)</p>
+          <p class="text-[10px] md:text-xs text-gray-500 hidden sm:block">Question Paper Generator (Std 9 to 12 All Streams)</p>
         </div>
       </div>
       <div class="flex items-center gap-2 md:gap-3">
@@ -402,7 +402,7 @@
       <section id="view-dashboard" class="space-y-6">
         <div>
           <h2 class="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
-          <p class="text-sm text-gray-500">Summary of question repository and examination templates across GSEB Std 9 to 12.</p>
+          <p class="text-sm text-gray-500">Summary of question repository and examination templates across Std 9 to 12.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -411,7 +411,7 @@
               <span class="text-xs font-semibold text-gray-500 uppercase">Total Questions</span>
               <div class="text-2xl font-bold text-gray-900 mt-2" id="statTotalQuestions">0</div>
             </div>
-            <span class="text-xs text-emerald-600 font-medium mt-3">Across all GSEB subjects</span>
+            <span class="text-xs text-emerald-600 font-medium mt-3">Across all subjects</span>
           </div>
 
           <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
@@ -486,8 +486,8 @@
       <section id="view-board-exam" class="hidden space-y-6">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-2xl font-bold text-amber-900">GSEB Board Exam Preparation (Std 10 & 12)</h2>
-            <p class="text-sm text-gray-500">Curate and import GSEB board-pattern question papers.</p>
+            <h2 class="text-2xl font-bold text-amber-900">Board Exam Preparation (Std 10 & 12)</h2>
+            <p class="text-sm text-gray-500">Curate and import board-pattern question papers.</p>
           </div>
           <div class="flex gap-2">
             <button type="button" onclick="openImportModal('board')" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 shadow">
@@ -559,8 +559,8 @@
       <section id="view-questions" class="space-y-4 hidden">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-2xl font-bold text-gray-800">GSEB Question Bank</h2>
-            <p class="text-sm text-gray-500">Filter, edit, and manage questions across all GSEB standards (9 to 12) and streams.</p>
+            <h2 class="text-2xl font-bold text-gray-800">Question Bank</h2>
+            <p class="text-sm text-gray-500">Filter, edit, and manage questions across all standards (9 to 12) and streams.</p>
           </div>
           <div class="flex gap-2">
             <button type="button" id="btnSaveQuestions" onclick="manualSaveQuestions()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow">
@@ -595,7 +595,7 @@
           </select>
 
           <select id="filterSubject" onchange="onFilterStdOrSubjectChange(false)" class="border rounded px-3 py-1.5 text-sm text-gray-700 bg-white max-w-xs">
-            <option value="">All GSEB Subjects</option>
+            <option value="">All Subjects</option>
           </select>
 
           <select id="filterCategory" onchange="applyQuestionFilter()" class="border rounded px-3 py-1.5 text-sm text-gray-600 bg-white">
@@ -641,7 +641,7 @@
         <!-- Add Question Dialog -->
         <dialog id="addQuestionModal" class="p-6 rounded-xl border border-gray-200 shadow-xl backdrop:bg-black/40 w-full max-w-lg">
           <form id="addQuestionForm" class="space-y-4">
-            <h3 class="text-lg font-bold text-gray-900 border-b pb-2">Add New GSEB Question</h3>
+            <h3 class="text-lg font-bold text-gray-900 border-b pb-2">Add New Question</h3>
             <div class="grid grid-cols-2 gap-3">
               <div>
                 <label for="qStd" class="block text-xs font-medium text-gray-700 mb-1">Standard:</label>
@@ -662,7 +662,7 @@
               </div>
             </div>
             <div>
-              <label for="qSubject" class="block text-xs font-medium text-gray-700 mb-1">GSEB Subject:</label>
+              <label for="qSubject" class="block text-xs font-medium text-gray-700 mb-1">Subject:</label>
               <select id="qSubject" required class="w-full border rounded-md p-2 text-sm bg-white" onchange="updateQuestionModalChapters()"></select>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -718,7 +718,7 @@
         <div class="flex justify-between items-center">
           <div>
             <h2 class="text-2xl font-bold text-gray-800">Chapters Management</h2>
-            <p class="text-sm text-gray-500">Configure syllabus units and chapters per GSEB subject, standard, and medium.</p>
+            <p class="text-sm text-gray-500">Configure syllabus units and chapters per subject, standard, and medium.</p>
           </div>
           <button type="button" id="btnOpenAddChapter" class="bg-blue-900 hover:bg-blue-800 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2">
             <span>➕</span> Add Chapter
@@ -791,7 +791,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-2xl font-bold text-gray-800">Blueprint Designer</h2>
-            <p class="text-sm text-gray-500">Configure examination structure, school name, GSEB subject, medium, and chapter-wise allocation matrix.</p>
+            <p class="text-sm text-gray-500">Configure examination structure, school name, subject, medium, and chapter-wise allocation matrix.</p>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" onclick="openBlueprintMultiModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-sm transition-colors">
@@ -843,7 +843,7 @@
               </select>
             </div>
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">GSEB Subject</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
               <select id="bpSubject" class="w-full border rounded px-3 py-2 text-sm bg-white" onchange="refreshAllocationOptions()"></select>
             </div>
 
@@ -1264,9 +1264,9 @@
     }
 
     // =========================================================================
-    // === COMPLETE GSEB CURRICULUM WITH SEPARATE EN / GU MEDIUM NAMES =========
+    // === COMPLETE CURRICULUM WITH SEPARATE EN / GU MEDIUM NAMES ==============
     // =========================================================================
-    const GSEB_SUBJECTS_MAP = {
+    const SUBJECTS_MAP = {
       secondary: [ // Std 9 & Std 10
         { id: "Mathematics", nameEn: "Mathematics", nameGu: "ગણિત" },
         { id: "Mathematics (Basic)", nameEn: "Mathematics (Basic)", nameGu: "ગણિત (બેઝિક)" },
@@ -1325,13 +1325,13 @@
       return `${subjectObj.nameEn} (${subjectObj.nameGu})`;
     }
 
-    function getGsebSubjectsForStd(stdNumber) {
+    function getSubjectsForStd(stdNumber) {
       const num = parseInt(stdNumber, 10);
       if (num === 9 || num === 10) {
-        return GSEB_SUBJECTS_MAP.secondary;
+        return SUBJECTS_MAP.secondary;
       }
-      const combined = [...GSEB_SUBJECTS_MAP.higher_secondary_science];
-      GSEB_SUBJECTS_MAP.higher_secondary_general.forEach(item => {
+      const combined = [...SUBJECTS_MAP.higher_secondary_science];
+      SUBJECTS_MAP.higher_secondary_general.forEach(item => {
         if (!combined.some(c => c.id === item.id)) {
           combined.push(item);
         }
@@ -1339,11 +1339,11 @@
       return combined;
     }
 
-    function getAllGsebSubjectsUnique() {
+    function getAllSubjectsUnique() {
       const all = [
-        ...GSEB_SUBJECTS_MAP.secondary,
-        ...GSEB_SUBJECTS_MAP.higher_secondary_science,
-        ...GSEB_SUBJECTS_MAP.higher_secondary_general
+        ...SUBJECTS_MAP.secondary,
+        ...SUBJECTS_MAP.higher_secondary_science,
+        ...SUBJECTS_MAP.higher_secondary_general
       ];
       const unique = [];
       const seen = new Set();
@@ -1364,7 +1364,7 @@
     }
 
     function getSubjectResolvedName(subjectId, medium) {
-      const all = getAllGsebSubjectsUnique();
+      const all = getAllSubjectsUnique();
       const found = all.find(s => s.id === subjectId);
       if (found) {
         return getSubjectDisplayName(found, medium);
@@ -1386,8 +1386,8 @@
       const filterSub = document.getElementById('filterSubject');
       if (filterSub) {
         const curVal = filterSub.value;
-        const subjects = stdVal ? getGsebSubjectsForStd(stdVal) : getAllGsebSubjectsUnique();
-        filterSub.innerHTML = '<option value="">All GSEB Subjects</option>' + subjects.map(s => `
+        const subjects = stdVal ? getSubjectsForStd(stdVal) : getAllSubjectsUnique();
+        filterSub.innerHTML = '<option value="">All Subjects</option>' + subjects.map(s => `
           <option value="${s.id}" ${s.id === curVal ? 'selected' : ''}>${getSubjectDisplayName(s, medium)}</option>
         `).join('');
       }
@@ -1410,7 +1410,7 @@
       const select = document.getElementById('bpSubject');
       if (select) {
         const prev = select.value;
-        const list = getGsebSubjectsForStd(stdVal);
+        const list = getSubjectsForStd(stdVal);
         populateSelectWithMedium(select, list, medium, prev || list[0].id);
       }
       refreshAllocationOptions();
@@ -1422,7 +1422,7 @@
       const select = document.getElementById('qSubject');
       if (select) {
         const prev = select.value;
-        const list = getGsebSubjectsForStd(stdVal);
+        const list = getSubjectsForStd(stdVal);
         populateSelectWithMedium(select, list, medium, prev || list[0].id);
         updateQuestionModalChapters();
       }
@@ -1435,7 +1435,7 @@
       const select = document.getElementById('chSubject');
       if (select) {
         const prev = select.value;
-        const list = getGsebSubjectsForStd(stdVal);
+        const list = getSubjectsForStd(stdVal);
         populateSelectWithMedium(select, list, medium, prev || list[0].id);
       }
     }
@@ -1446,7 +1446,7 @@
       const select = document.getElementById('importSubject');
       if (select) {
         const prev = select.value;
-        const list = getGsebSubjectsForStd(stdVal);
+        const list = getSubjectsForStd(stdVal);
         populateSelectWithMedium(select, list, medium, prev || list[0].id);
         updateImportChapterDropdown();
       }
@@ -2822,7 +2822,7 @@
         nameInput.value = 'Annual Examination';
         durationInput.value = '3 Hours';
       } else if (preset === 'Board Exam') {
-        nameInput.value = 'GSEB Board Pattern Examination';
+        nameInput.value = 'Board Pattern Examination';
         durationInput.value = '3 Hours';
       } else if (preset === 'GUJCET Exam') {
         nameInput.value = 'GUJCET Mock Examination';
