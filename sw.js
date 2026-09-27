@@ -1,4 +1,4 @@
-const CACHE_NAME = 'paper-gen-cache-v5';
+const CACHE_NAME = 'paper-gen-cache-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
