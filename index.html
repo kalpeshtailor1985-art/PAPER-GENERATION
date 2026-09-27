@@ -31,6 +31,27 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics-compat.js"></script>
 
+  <!-- MATHJAX 3 CONFIGURATION & SCRIPT -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+      },
+      svg: {
+        fontCache: 'global'
+      },
+      startup: {
+        pageReady: () => {
+          return MathJax.startup.defaultPageReady();
+        }
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
   <style>
     .cambria-math,
     #print-area,
@@ -1239,6 +1260,16 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
 
+    // Helper to safely trigger MathJax typesetting on dynamic containers
+    function renderMathInApp(targetEl = null) {
+      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        const targets = targetEl ? [targetEl] : [];
+        window.MathJax.typesetPromise(targets).catch((err) => {
+          console.warn('MathJax typesetting notification:', err);
+        });
+      }
+    }
+
     // =========================================================================
     // === AUTO-GENERATE HIGH-RESOLUTION SIGMA (∑) PNG ICONS FOR PWA INSTALL ===
     // =========================================================================
@@ -2230,6 +2261,7 @@
       updateDashboardCounters();
       renderCategoryViews();
       if (window.lucide) lucide.createIcons();
+      renderMathInApp(tbody);
     }
 
     async function updateQuestionType(index, newType) {
@@ -2283,6 +2315,7 @@
             <td class="py-2.5 px-4 text-emerald-700 text-xs cambria-math-text">${q.answer || '-'}</td>
           </tr>
         `).join('') || `<tr><td colspan="7" class="py-4 text-center text-gray-400 italic">No board questions stored.</td></tr>`;
+        renderMathInApp(boardTbody);
       }
 
       if (gujcetTbody) {
@@ -2296,6 +2329,7 @@
             <td class="py-2.5 px-4 text-emerald-700 text-xs cambria-math-text">${q.answer || '-'}</td>
           </tr>
         `).join('') || `<tr><td colspan="6" class="py-4 text-center text-gray-400 italic">No GUJCET questions stored.</td></tr>`;
+        renderMathInApp(gujcetTbody);
       }
     }
 
@@ -3636,6 +3670,7 @@
       }
 
       renderBlueprintSummaryTable(paper);
+      renderMathInApp(document.getElementById('print-area'));
     }
 
     function renderBlueprintSummaryTable(paper) {
@@ -3693,6 +3728,7 @@
           </tr>
         `;
       }
+      renderMathInApp(document.getElementById('print-blueprint-area'));
     }
 
     function renderAllPaperTables() {
@@ -3748,24 +3784,34 @@
       const container = document.getElementById('paperAnswerKeyContainer');
       if (container) {
         container.classList.toggle('hidden', !show);
+        if (show) renderMathInApp(container);
       }
     }
 
-    function printBlueprintOnly() {
+    async function printBlueprintOnly() {
       document.body.classList.add('print-blueprint-mode');
+      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        await window.MathJax.typesetPromise([document.getElementById('print-blueprint-area')]);
+      }
       window.print();
       document.body.classList.remove('print-blueprint-mode');
     }
 
-    function printPaperOnly() {
+    async function printPaperOnly() {
       document.getElementById('paperAnswerKeyContainer').classList.add('hidden');
       document.body.classList.remove('print-blueprint-mode');
+      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        await window.MathJax.typesetPromise([document.getElementById('print-area')]);
+      }
       window.print();
     }
 
-    function printWithSolutions() {
+    async function printWithSolutions() {
       document.getElementById('paperAnswerKeyContainer').classList.remove('hidden');
       document.body.classList.remove('print-blueprint-mode');
+      if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        await window.MathJax.typesetPromise([document.getElementById('print-area')]);
+      }
       window.print();
     }
 
@@ -3779,6 +3825,12 @@
       if (viewName === 'blueprints') {
         refreshAllocationOptions();
         renderBlueprintsTable();
+      }
+      if (viewName === 'questions') {
+        renderMathInApp(document.getElementById('questions-tbody'));
+      }
+      if (viewName === 'generate') {
+        renderMathInApp(document.getElementById('print-area'));
       }
       if (window.lucide) lucide.createIcons();
     }
